@@ -139,7 +139,108 @@ pub fn count_primes_with_arena(n: u64, seg_size_bytes: usize, arena: &mut SieveA
             p.byte = p.byte.saturating_sub(s);
         }
         for p in arena.medium_primes.iter_mut() {
+            p.byte = p.byte.saturating_sub(s as u32);
+        }
+    }
+
+    total_primes
+}
+
+/// Direct range sieve: counts primes in [lo, hi] by sieving only segments within [lo, hi].
+pub fn count_primes_range_direct(
+    lo: u64,
+    hi: u64,
+    seg_size_bytes: usize,
+    arena: &mut SieveArena,
+) -> u64 {
+    if lo > hi {
+        return 0;
+    }
+    if lo <= 2 {
+        return count_primes_with_arena(hi, seg_size_bytes, arena);
+    }
+
+    arena.reset();
+    let s = seg_size_bytes;
+    let seg_span = (s as u64) * 30;
+
+    let start_seg_idx = (lo / seg_span) as usize;
+    let end_seg_idx = (hi / seg_span) as usize;
+    let aligned_low = (start_seg_idx as u64) * seg_span;
+
+    // Activate all base primes up to sqrt(hi)
+    for &p in &arena.base_primes {
+        if p * p > hi {
+            break;
+        }
+        let target_m = p.max((aligned_low + p - 1) / p);
+        let rem = (target_m % 30) as usize;
+        let next_res = wheel::NEXT_COPRIME[rem] as u64;
+        let m = if next_res >= (rem as u64) {
+            (target_m / 30) * 30 + next_res
+        } else {
+            (target_m / 30 + 1) * 30 + next_res
+        };
+
+        let mult = p * m;
+        let p_byte = (mult / 30) - (aligned_low / 30);
+        let j = wheel::RESIDUE_TO_BIT[(m % 30) as usize];
+
+        if p <= arena.small_threshold {
+            arena.small_primes.push(SmallPrime::new(p, p_byte as usize, j));
+        } else {
+            arena.medium_primes.push(MediumPrime::new(p, p_byte as usize, j));
+        }
+    }
+
+    let mut total_primes = 0u64;
+
+    for seg_idx in start_seg_idx..=end_seg_idx {
+        let cur_seg_low = (seg_idx as u64) * seg_span;
+        let cur_seg_high = cur_seg_low + seg_span - 1;
+
+        // 1. Presieve
+        arena.presieve.init_segment(seg_idx, &mut arena.segment_buf);
+
+        // 2. Cross off small & medium primes
+        for p in arena.small_primes.iter_mut() {
+            p.cross_off(&mut arena.segment_buf);
+        }
+        for p in arena.medium_primes.iter_mut() {
+            p.cross_off(&mut arena.segment_buf);
+        }
+
+        // 3. Tally with head/tail masking if boundary segment
+        let seg_start_n = cur_seg_low.max(lo);
+        let seg_end_n = cur_seg_high.min(hi);
+
+        if seg_start_n == cur_seg_low && seg_end_n == cur_seg_high {
+            // Completely full segment: full popcount
+            total_primes += count_segment(&mut arena.segment_buf, s, 7);
+        } else {
+            // Partial segment: iterate over valid bytes
+            let first_byte = ((seg_start_n - cur_seg_low) / 30) as usize;
+            let last_byte = ((seg_end_n - cur_seg_low) / 30) as usize;
+
+            for b in first_byte..=last_byte {
+                let mut bits = arena.segment_buf[b];
+                while bits != 0 {
+                    let bit_idx = bits.trailing_zeros() as usize;
+                    bits &= !(1 << bit_idx);
+                    let cand = cur_seg_low + (b as u64) * 30 + (RESIDUES[bit_idx] as u64);
+                    if cand >= seg_start_n && cand <= seg_end_n {
+                        total_primes += 1;
+                    }
+                }
+            }
+        }
+
+        // 4. Translation-invariance update for next segment: byte -= S
+        for p in arena.small_primes.iter_mut() {
             p.byte = p.byte.saturating_sub(s);
+        }
+        for p in arena.medium_primes.iter_mut() {
+            p.byte = p.byte.saturating_sub(s as u32);
         }
     }
 
@@ -151,9 +252,8 @@ pub fn count_primes_range(lo: u64, hi: u64, seg_size_bytes: usize) -> u64 {
     if lo > hi {
         return 0;
     }
-    let hi_count = count_primes(hi, seg_size_bytes);
-    let lo_count = if lo <= 2 { 0 } else { count_primes(lo - 1, seg_size_bytes) };
-    hi_count - lo_count
+    let mut arena = SieveArena::new(hi, seg_size_bytes);
+    count_primes_range_direct(lo, hi, seg_size_bytes, &mut arena)
 }
 
 #[cfg(test)]

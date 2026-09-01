@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/titan-core",
     "crates/titan-sieve",
+    "crates/titan-pool",
     "crates/titan-bench",
     "crates/titan-oracle",
 ]

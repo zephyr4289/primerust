@@ -14,3 +14,7 @@ path = "src/bin/sieve_gate.rs"
 [[bin]]
 name = "sieve_bench"
 path = "src/bin/sieve_bench.rs"
+
+[[bin]]
+name = "e1_survey"
+path = "src/bin/e1_survey.rs"

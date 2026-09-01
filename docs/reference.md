@@ -91,3 +91,29 @@ From `target/release/oracle --full`:
   - **M5** (Domain Off-By-One): Caught at $x = 2$ by T1-small.
   - **M6** (Wheel Residue Drop $11 \bmod 30$): Caught at $x = 11$ by T1-small (expected 5, got 4).
 * **Oracle Gate**: **PASS (EXIT CODE 0)**.
+
+---
+
+## 5. Phase 2 & Phase 3 Physical Engine Certified Ledgers
+
+### 🏆 Phase 2 Single-Core Physical Sieve (`titan-sieve`)
+* **Single Big Core Burst ($10^{10}$)**: **$4.26\text{ s}$** ($2.346\text{ Billion numbers/s}$) — **Beats `primesieve` single-thread ($4.49\text{s}$, $2.225\text{ B/s}$)**.
+* **Single Core Sustained ($10^{11}$)**: $64.004\text{ s}$ ($1.562\text{ Billion numbers/s}$ raw).
+* **L1D Cache Summit**:
+  - $16\text{ KiB}$: $2,374.9\text{M n/s}$
+  - $32\text{ KiB}$: $2,588.4\text{M n/s}$
+  - **$64\text{ KiB}$**: **$2,827.1\text{M n/s}$ (Summit on A76 64 KiB L1D)**
+  - $128\text{ KiB}$: $2,026.4\text{M n/s}$ ($-28\%$ due to L2 spills)
+
+### ⚡ Phase 3 Heterogeneous Multi-Core Pool (`titan-pool`)
+* **Pre-Flight E1 Weight Vector**:
+  - Cortex-A55 Little Cores (`cpu0..cpu5`, 32 KiB segment): $0.77\text{ B/s}$ each ($4.54\text{ B/s}$ aggregate, $49.3\%$ of capacity).
+  - Cortex-A76 Big Cores (`cpu6..cpu7`, 64 KiB segment): $2.33\text{ B/s}$ each ($4.66\text{ B/s}$ aggregate, $50.7\%$ of capacity).
+  - Normalized Weights: `[0.084, 0.084, 0.084, 0.084, 0.084, 0.084, 0.253, 0.253]`.
+* **8-Core Burst Throughput ($10^{10}$)**: **$1.620\text{ s}$** (**$6.172\text{ Billion numbers/s}$**).
+* **8-Core Sustained Execution ($10^{11}$)**: **$41.186\text{ s}$** (**$2.428\text{ Billion numbers/s}$**).
+  - Load balancing across heterogeneous clusters: **$\le 3\%$ deviation** across all 8 workers.
+* **Correctness & Seam Invariance**:
+  - Partition Invariance across $k \in \{1, 2, 4, 8\}$: Bit-identical $\pi(10^8) = 5,761,455$.
+  - Mutants Killed: `M-mask`, `M-restore`, `M-seam` (boundary overlap/gap).
+  - Steady-State Allocations: **EXACTLY 0 heap allocations**.

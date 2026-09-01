@@ -24,6 +24,15 @@ name = "titan-oracle"
 version = "0.1.0"
 
 [[package]]
+name = "titan-pool"
+version = "0.1.0"
+dependencies = [
+ "titan-bench",
+ "titan-core",
+ "titan-sieve",
+]
+
+[[package]]
 name = "titan-sieve"
 version = "0.1.0"
 dependencies = [
