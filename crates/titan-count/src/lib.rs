@@ -19,6 +19,7 @@ pub mod p3;
 pub mod phi;
 pub mod phi_flat;
 pub mod pi_table;
+pub mod scale_dispatch;
 pub mod special_leaves;
 
 pub use arena25::Arena25Engine;
@@ -28,6 +29,7 @@ pub use leaf_block::{LeafBlockC, LeafBlockEngine};
 pub use lmo::LmoCounter;
 pub use meissel::MeisselCounter;
 pub use phi_flat::PhiFlat;
+pub use scale_dispatch::{DialConfig, ScaleDispatch};
 
 /// Exact combinatorial count of pi(x) using the Gourdon interval substrate.
 #[inline]

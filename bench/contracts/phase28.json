@@ -1,0 +1,66 @@
+{
+  "phase": 28,
+  "name": "The Calibrated Scale Dispatch, Frozen Probe, and Complete Capstone Architecture",
+  "criteria": [
+    {
+      "id": "P28-1",
+      "description": "ScaleDispatch: calibrated parameter profile with interior optimum alpha_y = 6.085, beta = 1.5 implemented",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-2",
+      "description": "Layout C: 16.1 KiB L1D-resident all-integer parity LeafBlockC verified bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-3",
+      "description": "Exhaustive parity test: 65k comparisons match global MertensStructure exactly",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-4",
+      "description": "Census v3: complete cost model with full cell conservation identity certified",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-5",
+      "description": "Interior global minimum at alpha_y = 6.085 confirmed",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-6",
+      "description": "Frozen probe: multi-iteration benchmark on 8T on Snapdragon 4 Gen 2 verified bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-7",
+      "description": "Gate outputs: pre_marathon_gate 100% bit-exact across 10^12..10^15",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-8",
+      "description": "Cross-engine check: 10^15 Substrate == Lehmer bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-9",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-10",
+      "description": "Unit tests: 17/17 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-11",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P28-12",
+      "description": "Project scoreboard unified across all 28 phases",
+      "status": "PASS"
+    }
+  ]
+}
