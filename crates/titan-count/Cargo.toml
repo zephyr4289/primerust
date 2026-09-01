@@ -1,0 +1,22 @@
+[package]
+name = "titan-count"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+titan-core = { path = "../titan-core" }
+titan-sieve = { path = "../titan-sieve" }
+titan-pool = { path = "../titan-pool" }
+titan-bench = { path = "../titan-bench" }
+
+[[bin]]
+name = "c1_census"
+path = "src/bin/c1_census.rs"
+
+[[bin]]
+name = "count_gate"
+path = "src/bin/count_gate.rs"
+
+[[bin]]
+name = "count_bench"
+path = "src/bin/count_bench.rs"

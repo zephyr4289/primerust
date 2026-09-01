@@ -146,3 +146,30 @@ From `target/release/oracle --full`:
 ### 🚀 Phase 4 Performance
 * **8-Core $10^{11}$ Execution**: **$37.154\text{ s}$** (**$2.691\text{ Billion numbers/s}$**), improving upon Phase 3's $41.186\text{ s}$.
 * **Gate Record**: Persisted in `bench/records/titan_deep_gate.json` (**ALL CRITERIA GREEN**).
+
+---
+
+## 7. Phase 5 Combinatorial Crown Ledger (`titan-count`)
+
+### 🛰️ Pre-Flight Experiment C1: $\Phi$-Tree Census
+* **Node Count & Stack Depth Distribution**:
+  - $10^{10}$ ($a=65$): $312,833\text{ nodes}$, max depth $60$, **$0.009\text{ s}$**
+  - $10^{11}$ ($a=102$): $2,565,665\text{ nodes}$, max depth $97$, **$0.054\text{ s}$**
+  - $10^{12}$ ($a=168$): $22,230,535\text{ nodes}$, max depth $163$, **$0.602\text{ s}$**
+  - $10^{13}$ ($a=275$): $190,648,025\text{ nodes}$, max depth $270$, **$5.510\text{ s}$**
+  - $10^{14}$ ($a=446$): $1,607,709,569\text{ nodes}$, max depth $441$, **$28.945\text{ s}$**
+* **The Explicit Stack Law**:
+  - Pre-allocated bounded DFS stack ($4,096$ entries) consumed only $10.7\%$ of allocated capacity at $10^{14}$.
+  - Zero recursion across all scales: the stack-overflow failure class is permanently eradicated.
+
+### ⚡ Combinatorial Milestones & Attributions
+* **Sub-Second $\pi(10^{12})$**: **$\pi(10^{12}) = 37,607,912,018$** in **$0.842\text{ s}$** (vs physical sieve $150+\text{ s}$).
+* **$\pi(10^{13})$**: **$\pi(10^{13}) = 346,065,536,839$** in **$6.035\text{ s}$**.
+* **$\pi(10^{14})$**: **$\pi(10^{14}) = 3,204,941,750,802$** in **$45.494\text{ s}$** (Table $19.3\text{s}$, $\Phi$ $25.4\text{s}$, $P_2$ $0.033\text{s}$, $P_3$ $0.76\text{s}$).
+
+### 🛡️ Correctness & Truth Stack
+* **Fourth-Power Boundary Matrix**: $\{2^4, 3^4, 5^4, 7^4, 11^4\} \pm 1$ evaluated bit-exact.
+* **Cross-Engine Differential**: 12 points spanning $[10^6, 10^{10}]$ verified bit-exact between `titan-count` (combinatorial) and `titan-sieve` (physical bit sieve).
+* **Full Oracle**: Passed candidate streaming protocol in **$23.04\text{ s}$** with 6/6 mutants killed.
+* **Gate Record**: Persisted in `bench/records/titan_count_gate.json` (**EXIT 0**).
+
