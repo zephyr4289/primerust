@@ -24,7 +24,7 @@ pub mod special_leaves;
 pub use arena25::Arena25Engine;
 pub use assembly::LehmerCounter;
 pub use gourdon::GourdonCounter;
-pub use leaf_block::{LeafBlockB, LeafBlockEngine};
+pub use leaf_block::{LeafBlockC, LeafBlockEngine};
 pub use lmo::LmoCounter;
 pub use meissel::MeisselCounter;
 pub use phi_flat::PhiFlat;

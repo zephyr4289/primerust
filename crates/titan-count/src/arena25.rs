@@ -6,7 +6,7 @@
 //!   - INVARIANT 2: Each block is built at most ONCE per run.
 //!   - INVARIANT 3: Sparse region (v > v_star) falls back to global tables directly.
 
-use crate::leaf_block::{LeafBlockB, NUMBERS_PER_BLOCK_B};
+use crate::leaf_block::LeafBlockC;
 use crate::mertens_struct::MertensStructure;
 use crate::pi_table::PiTable;
 
@@ -21,7 +21,7 @@ pub struct PendingCell {
 
 /// Per-thread ~72 KiB transient arena with zero heap allocation traffic on hot path
 pub struct Arena25 {
-    pub blk: LeafBlockB,
+    pub blk: LeafBlockC,
     pub pending: Vec<PendingCell>,
     pub blocks_built: usize,
     pub cells_served: usize,
@@ -30,7 +30,7 @@ pub struct Arena25 {
 impl Arena25 {
     pub fn new() -> Self {
         Self {
-            blk: LeafBlockB::new(),
+            blk: LeafBlockC::new(),
             pending: Vec::with_capacity(32768),
             blocks_built: 0,
             cells_served: 0,

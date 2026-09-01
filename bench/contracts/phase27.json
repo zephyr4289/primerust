@@ -1,0 +1,66 @@
+{
+  "phase": 27,
+  "name": "The Density Dispatch, Layout C Integer Parity, and Complete Cost Model",
+  "criteria": [
+    {
+      "id": "P27-1",
+      "description": "Layout C: 16.1 KiB L1D-resident all-integer parity LeafBlockC implemented and verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-2",
+      "description": "Census v3: complete cost model evaluated on silicon at 10^14",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-3",
+      "description": "Full conservation identity: hard(alpha, beta) + delegated(alpha, beta) == total_cells(alpha) certified",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-4",
+      "description": "Interior global minimum confirmed at alpha_y = 6.085, beta = 1.5 (0.426s est time)",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-5",
+      "description": "Density dispatch: dense blocks vs sparse global table differentiation defined",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-6",
+      "description": "Gate outputs: pre_marathon_gate 100% bit-exact across 10^12..10^15",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-7",
+      "description": "Cross-engine check: 10^15 Substrate == Lehmer bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-8",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-9",
+      "description": "Unit tests: 16/16 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-10",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-11",
+      "description": "Scale-indexed selector: ST dispatch for x <= 10^10",
+      "status": "PASS"
+    },
+    {
+      "id": "P27-12",
+      "description": "Project scoreboard unified across all 27 phases",
+      "status": "PASS"
+    }
+  ]
+}

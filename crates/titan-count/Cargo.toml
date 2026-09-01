@@ -84,3 +84,11 @@ path = "src/bin/census_2d_grid.rs"
 [[bin]]
 name = "arena_counters"
 path = "src/bin/arena_counters.rs"
+
+[[bin]]
+name = "census_v3"
+path = "src/bin/census_v3.rs"
+
+[[bin]]
+name = "parity_check"
+path = "src/bin/parity_check.rs"
