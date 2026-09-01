@@ -23,3 +23,7 @@ path = "src/bin/e1_survey.rs"
 name = "forced_gate"
 path = "src/bin/forced_gate.rs"
 
+[[bin]]
+name = "geometry_sweep"
+path = "src/bin/geometry_sweep.rs"
+

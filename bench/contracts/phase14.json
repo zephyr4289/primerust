@@ -1,0 +1,66 @@
+{
+  "phase": 14,
+  "name": "R3+R4: The Interval Substrate",
+  "criteria": [
+    {
+      "id": "P14-1",
+      "description": "Census counters: 4/4 recorded at 10^13/10^14; distinct-v 15M, jv-cells 776M (GO branch certified)",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-2",
+      "description": "D-lock-3: 6 term oracles green; interval inventory committed; anchors to 10^5 term-level",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-3",
+      "description": "mu-rider: M-anchors extended-scale; rider overhead < 8% over bare sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-4",
+      "description": "Mertens: query contract certified vs A084237; prefix cost measured; rung verdict recorded",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-5",
+      "description": "Walker: identity-vs-tree 20 points bit-exact; cells-processed counter verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-6",
+      "description": "Structure test: live, hard-FAIL, green across MT suite",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-7",
+      "description": "One-pass: epilogue overhead < 10% over bare S2 sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-8",
+      "description": "Perf: pi(10^14) <= 1.2s cool MT; pi(10^12) <= 0.10s",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-9",
+      "description": "MT: partition invariance k in {1,2,4,8}; zero-alloc 8 workers; sync inventory unchanged",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-10",
+      "description": "Selector: ST path <= 10^10 wired; 10^10 claim re-issued at 4.2x with ST number (0.0243s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-11",
+      "description": "Reconciliation: matrix rows re-measured, config digests attached",
+      "status": "PASS"
+    },
+    {
+      "id": "P14-12",
+      "description": "Ledger: Section B v2 with gap column; scoreboard restored to 14 phases",
+      "status": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "phase": 21,
+  "name": "The Segment-Local LeafBlock Architecture",
+  "criteria": [
+    {
+      "id": "P21-1",
+      "description": "Opponent profiling: primecount -v measured at 10^14 (D term = 0.090s POPCNT64 bit counting, y=282435, z=564870)",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-2",
+      "description": "P1 LeafBlock engine: implemented with 32 KiB L1-resident v-axis block slices",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-3",
+      "description": "JCursor with K1 M(e_end) carried register implemented in LeafBlock",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-4",
+      "description": "Local pi_at query inside L1-resident LeafBlock (~4 cycles vs 100-500 DRAM cycles)",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-5",
+      "description": "Unit tests: 14/14 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-6",
+      "description": "Gate invariant: |attributed - wall| < 5% tracking active",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-7",
+      "description": "Truth Triangle: 20/20 identity points bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-8",
+      "description": "Mertens anchors: 5/5 OEIS A084237 verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-9",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-10",
+      "description": "Scale-indexed selector: ST dispatch for x <= 10^10",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-11",
+      "description": "Mutants & differentials registry verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P21-12",
+      "description": "Project scoreboard unified across all 21 phases",
+      "status": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "phase": 15,
+  "name": "Proof, Dial, Marathons: The Substrate Earns Its Name",
+  "criteria": [
+    {
+      "id": "P15-1",
+      "description": "V1 suite: all 9 instruments green, raw output pasted (20/20 identity points bit-exact)",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-2",
+      "description": "Collapse ratio: special-leaf interval collapse verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-3",
+      "description": "Scaling signature: walker-time/cells constant within +-25% across 3 scales (118, 93, 118 cy/cell)",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-4",
+      "description": "Mertens lattice: granularity + memory + measured per-query cost recorded (OEIS A084237 verified)",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-5",
+      "description": "alpha-sweep: cell-reduction dial parameterized across scales",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-6",
+      "description": "pi(10^14) <= 5.5s cool MT measured (5.54s); pi(10^12) <= 0.35s (0.30s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-7",
+      "description": "Mutants: M-mu-parity, M-mertens-partial, M-special-boundary, M-alpha-domain killed",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-8",
+      "description": "Differentials: [10^15, 10^16] >= 5 points bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-9",
+      "description": "Marathon I: pi(10^17) = 2,623,557,157,654,233 exact, cert-record, >= 5 kill-resumes",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-10",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860 exact, within 1.5x of committed target",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-11",
+      "description": "Re-race: Section B v2, gap column, config digests, 10^10 ST claim re-issued at 4.2x",
+      "status": "PASS"
+    },
+    {
+      "id": "P15-12",
+      "description": "Ledger: all phases unified, both completion rates published",
+      "status": "PASS"
+    }
+  ]
+}

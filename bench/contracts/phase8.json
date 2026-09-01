@@ -1,0 +1,66 @@
+{
+  "phase": 8,
+  "name": "The Second Silicon: Re-Instrumentation, Retuning, and Marathons",
+  "criteria": [
+    {
+      "id": "P8-1",
+      "description": "Contract re-diff executed: 18 consolidated criteria restored/committed; completion rate recomputed against 92 and recorded",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-2",
+      "description": "P0a-P0f records exist; device profile (SM4450) committed; G100 profile frozen; baselines keyed (device x rustc)",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-3",
+      "description": "Geometry summit re-swept per cluster; engine defaults match it (32 KiB on SM4450 A78 & A55)",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-4",
+      "description": "F1' knee + heatsoak' curve recorded; thermal model in profile; sustained predictions flow through telemetry chain",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-5",
+      "description": "References re-baselined; Section B of reference.md live; zero cross-device comparisons anywhere",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-6",
+      "description": "Same-device engine matrix: term ledgers at 10^12-10^14; Meissel-vs-Lehmer class gain established on identical silicon; 22.65s decomposed into (a)/(b)/(c) with numbers",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-7",
+      "description": "Phase 7 debts: 5/5 remaining mutants killed; differentials [10^15, 10^16] >= 5 points bit-exact; cross-engine through 10^11; C11/C12/C13 recorded",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-8",
+      "description": "Retuning ladder: T1-T3 landed with keep/revert verdicts; pi(10^14) target derived from cost model",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-9",
+      "description": "Marathon I: pi(10^17) = 2,623,557,157,654,233, cert-record, >= 5 kill-resumes bit-exact, leaf-bound runtime assert green",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-10",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860, cert-record, differential spot-checks above 10^16, checkpointed, kill-resumed",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-11",
+      "description": "Zero-alloc tripwire with 8 workers on new silicon; sync inventory unchanged; field-domain audit re-confirmed at the 10^18 envelope",
+      "status": "PASS"
+    },
+    {
+      "id": "P8-12",
+      "description": "reference.md forked A/B; gate record persisted; Phase 9 preview committed",
+      "status": "PASS"
+    }
+  ]
+}

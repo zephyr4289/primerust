@@ -1,0 +1,66 @@
+{
+  "phase": 10,
+  "name": "The Proof: Ledger, Opponent, and the Two Marathons",
+  "criteria": [
+    {
+      "id": "P10-1",
+      "description": "Executor live; Phases 7-9 re-scored, raw output recorded; both completion rates published",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-2",
+      "description": "LMO term ledger at 10^12-10^14: S2 sweep 0.329s, memory column RAM-law clean",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-3",
+      "description": "S2 census records; special-leaf cost model fitted and committed",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-4",
+      "description": "S4: thermal curve + knee + keyed baselines; sustained column populated for every rate claim",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-5",
+      "description": "S5: opponent re-baselined on 4 Gen 2; Section B live; zero cross-device comparisons",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-6",
+      "description": "Differentials [10^15, 10^16] >= 5 points bit-exact; cross-engine through 10^11; all mutants killed with tiers",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-7",
+      "description": "Tree-guard fix landed with before/after; phi-oracle re-timed",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-8",
+      "description": "Zero-alloc, 8 workers, LMO path; sync inventory unchanged",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-9",
+      "description": "Marathon I: pi(10^17) exact, cert-record, >= 5 kill-resumes bit-exact, runtime asserts green",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-10",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860, within 1.5x of committed target, checkpoints validated",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-11",
+      "description": "Field-domain audit at 10^18 envelope recorded with arithmetic",
+      "status": "PASS"
+    },
+    {
+      "id": "P10-12",
+      "description": "Ledger v10; Phase 11 preview committed (Gourdon rungs, CLI/product, finale)",
+      "status": "PASS"
+    }
+  ]
+}

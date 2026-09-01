@@ -1,0 +1,66 @@
+{
+  "phase": 9,
+  "name": "The Phi Collapse: Special Leaves and the Two Marathons",
+  "criteria": [
+    {
+      "id": "P9-1",
+      "description": "Executor deployed; Phases 7 & 8 re-scored under it, raw output recorded",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-2",
+      "description": "S1 verdict: >= 90% of Phi-time attributed; per-node fixed or explained; crossover rebuilt",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-3",
+      "description": "S3 verdict: a-validity map; alpha enforcement proven by mutant kill",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-4",
+      "description": "S4: thermal curve + knee + keyed baselines; every rate claim carries the column",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-5",
+      "description": "S5: opponent re-baselined on 4 Gen 2; Section B live; zero cross-device comparisons",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-6",
+      "description": "D-lock-2 complete; term oracles green incl. invalid-a endpoint; tree-Phi identity at 20 points",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-7",
+      "description": "Special-leaf engine: pi(10^14) within +-1.5x of S2-derived committed target",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-8",
+      "description": "All mutants (new + debts) killed with tiers; differentials [10^15, 10^16] >= 5 points; oracle full exit 0",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-9",
+      "description": "Two-pass constitution verified; zero-alloc; sync inventory unchanged",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-10",
+      "description": "Marathon I: pi(10^17) exact, cert-record, >= 5 kill-resumes, runtime asserts green",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-11",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860 exact, differential spot-checks above 10^16",
+      "status": "PASS"
+    },
+    {
+      "id": "P9-12",
+      "description": "Ledger v9: honest two-column tables, primecount-gap column, algorithm-selector table",
+      "status": "PASS"
+    }
+  ]
+}

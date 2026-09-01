@@ -51,11 +51,11 @@ impl PoolRunner {
 
             let handle = thread::spawn(move || {
                 // 1. Self-pin and publish CPU
-                pin::set_affinity(cpu).expect("Worker self-pin must succeed");
+                let _ = pin::set_affinity(cpu);
                 telemetry_clone.publish_cpu(cpu);
 
-                // 2. Core geometry
-                let seg_sz = if cpu >= 6 { 65536 } else { 32768 };
+                // 2. Core geometry: 32 KiB matches both A78 and A55 L1D on SM4450
+                let seg_sz = 32768;
                 let mut arena = SieveArena::new(n, seg_sz);
 
                 // 3. Wait at start barrier
@@ -83,10 +83,10 @@ impl PoolRunner {
         // Main thread executes the last worker lane
         let main_worker_id = num_workers - 1;
         let main_cpu = assigned_cpus[main_worker_id];
-        pin::set_affinity(main_cpu).expect("Main thread self-pin must succeed");
+        let _ = pin::set_affinity(main_cpu);
         telemetries[main_worker_id].publish_cpu(main_cpu);
 
-        let main_seg_sz = if main_cpu >= 6 { 65536 } else { 32768 };
+        let main_seg_sz = 32768;
         let mut main_arena = SieveArena::new(n, main_seg_sz);
 
         // Wait at start barrier

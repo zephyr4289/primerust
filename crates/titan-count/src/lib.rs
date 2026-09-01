@@ -1,14 +1,73 @@
 //! titan-count: Lehmer-class combinatorial prime counting engine.
 
+pub mod alpha;
+pub mod arena25;
 pub mod assembly;
 pub mod checkpoint;
+pub mod gourdon;
+pub mod interval_walker;
+pub mod leaf_block;
+pub mod leaves;
+pub mod lmo;
 pub mod magic;
+pub mod meissel;
+pub mod mertens_struct;
+pub mod mu_rider;
+pub mod mu_sieve;
 pub mod p2_sweep;
 pub mod p3;
 pub mod phi;
+pub mod phi_flat;
 pub mod pi_table;
+pub mod special_leaves;
 
+pub use arena25::Arena25Engine;
 pub use assembly::LehmerCounter;
+pub use gourdon::GourdonCounter;
+pub use leaf_block::{LeafBlockB, LeafBlockEngine};
+pub use lmo::LmoCounter;
+pub use meissel::MeisselCounter;
+pub use phi_flat::PhiFlat;
+
+/// Exact combinatorial count of pi(x) using the Gourdon interval substrate.
+#[inline]
+pub fn pi_gourdon(x: u64) -> u64 {
+    GourdonCounter::count(x, 8)
+}
+
+/// Exact multi-threaded combinatorial count of pi(x) using Gourdon MT.
+#[inline]
+pub fn pi_gourdon_mt(x: u64, num_threads: usize) -> u64 {
+    GourdonCounter::count(x, num_threads)
+}
+
+/// Exact combinatorial count of pi(x) using the LMO algorithm.
+#[inline]
+pub fn pi_lmo(x: u64) -> u64 {
+    let mut counter = LmoCounter::new();
+    counter.count(x)
+}
+
+/// Exact multi-threaded combinatorial count of pi(x) using LMO MT.
+#[inline]
+pub fn pi_lmo_mt(x: u64, num_threads: usize) -> u64 {
+    let counter = LmoCounter::new();
+    counter.count_mt(x, num_threads)
+}
+
+/// Exact combinatorial count of pi(x) using the Meissel identity (P3-free).
+#[inline]
+pub fn pi_meissel(x: u64) -> u64 {
+    let mut counter = MeisselCounter::new();
+    counter.count(x)
+}
+
+/// Exact multi-threaded combinatorial count of pi(x) using Meissel MT.
+#[inline]
+pub fn pi_meissel_mt(x: u64, num_threads: usize) -> u64 {
+    let counter = MeisselCounter::new();
+    counter.count_mt(x, num_threads)
+}
 
 /// Exact combinatorial count of pi(x) using the Lehmer identity.
 #[inline]

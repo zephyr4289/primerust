@@ -1,0 +1,66 @@
+{
+  "phase": 18,
+  "name": "The Audit by Repetition: K0 Attribution, Cache Diagnostics, and Marathon Verification",
+  "criteria": [
+    {
+      "id": "P18-1",
+      "description": "K0 attribution: 100% of special-leaf cycles attributed (lookups 62 cy, division 6 cy, branch 18 cy, DRAM variance 32.2 cy)",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-2",
+      "description": "Cache footprint signature: monotone L2->L3 latency curve diagnosed (112 cy at 10^12 -> 138 cy at 10^14)",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-3",
+      "description": "Marathon cert-record: pi(10^15) = 29,844,570,422,669 exact, 5 checkpoints in 105.581s",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-4",
+      "description": "K1 M-Chaining: carried register eliminates 50% of Mertens lookups",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-5",
+      "description": "alpha-dial: alpha = 1.0 locked into device profile as optimal cost trade-off",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-6",
+      "description": "Truth Triangle: 20/20 identity points bit-exact against Lehmer ground truth",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-7",
+      "description": "Mertens anchors: 5/5 OEIS A084237 literature anchors verified (M(10^3) through M(10^7))",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-8",
+      "description": "Unit tests: 13/13 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-9",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-10",
+      "description": "Scale-indexed selector: ST dispatch for x <= 10^10 capturing 4.22x speedup",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-11",
+      "description": "Mutants & differentials registry verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P18-12",
+      "description": "Project scoreboard unified across all 17 phases",
+      "status": "PASS"
+    }
+  ]
+}

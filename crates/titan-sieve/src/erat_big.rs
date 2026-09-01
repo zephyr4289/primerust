@@ -29,6 +29,10 @@ pub struct BucketEntry {
 impl BucketEntry {
     #[inline(always)]
     pub fn pack(p: u32, rel_byte: u32, j: u8, row: u8, bit: u8, rem_segs: u32) -> Self {
+        debug_assert!(j < 8, "j must be 0..8, got {}", j);
+        debug_assert!(row < 8, "row must be 0..8, got {}", row);
+        debug_assert!(bit < 8, "bit must be 0..8, got {}", bit);
+        debug_assert!(p <= 100_000_000, "prime p exceeds domain bound at 10^16/10^18, got {}", p);
         Self { p, rel_byte, j, row, bit, rem_segs }
     }
 

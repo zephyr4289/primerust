@@ -1,0 +1,66 @@
+{
+  "phase": 7,
+  "name": "titan-count v2: LMO / Gourdon-Class Combinatorial Engine",
+  "criteria": [
+    {
+      "id": "P7-1",
+      "description": "Retro-audit re-diffed: every contract file enumerates its original spec table; deviations are visible commits",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-2",
+      "description": "D-lock: derivation doc complete; term oracles green (all terms, both alpha endpoints, p^3+-1 matrix)",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-3",
+      "description": "Lehmer-as-phi-oracle: phi_LMO == phi_Lehmer at 20+ points; cross-engine through 10^11; oracle full live 10^14 exit 0",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-4",
+      "description": "Randomized differentials vs primecount in [10^15, 10^16] bit-exact (>= 5 points)",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-5",
+      "description": "All six mutants killed, tiers recorded; field-domain audit green at the 10^18 envelope",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-6",
+      "description": "One-pass law: shared-sweep overhead < 10% over bare sweep (C12); sync inventory unchanged; zero-alloc across pi(10^15) MT",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-7",
+      "description": "pi(10^14) <= 3.5s cool MT (floor 5s); two-column telemetry records",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-8",
+      "description": "pi(10^16) <= 60s sustained, >= 20x faster than Phase 6 Lehmer, term ledger reconciled",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-9",
+      "description": "Marathon I: pi(10^17) exact, cert-record, >= 5 kill-resumes bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-10",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860, cert-record, <= 15 min sustained, differential spot-checks above 10^16",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-11",
+      "description": "C10-C13 + C2-debt records exist; C10 leaf census reconciles with the cost-model band; C11's alpha table recorded per scale",
+      "status": "PASS"
+    },
+    {
+      "id": "P7-12",
+      "description": "reference.md v7: honest two-column table at every scale including the primecount-gap column; file_structure v2.5 amendments committed",
+      "status": "PASS"
+    }
+  ]
+}

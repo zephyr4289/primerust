@@ -1,0 +1,66 @@
+{
+  "phase": 24,
+  "name": "The Closed Regression Ledger, Flat Phi_c, and Layout B",
+  "criteria": [
+    {
+      "id": "P24-1",
+      "description": "Harness honesty (24-A): substrate timings isolated with untimed verification",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-2",
+      "description": "Flat analytical Phi_c (24-B): table-backed magic-division evaluator implemented in PhiFlat",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-3",
+      "description": "Layout B (24-C): 16.1 KiB L1D-resident LeafBlockB implemented (512 words, 2-bit mu stream)",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-4",
+      "description": "SWAR decoding: exact within-word mu(u) evaluation in 8-10 cycles",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-5",
+      "description": "z-Split parameterized (24-D): hard leaf band restricted to (y, z]",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-6",
+      "description": "Diagnostic profiling: term_breakdown verified on silicon at 10^14",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-7",
+      "description": "Gate outputs: pre_marathon_gate verified bit-exact across 10^12..10^15",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-8",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-9",
+      "description": "Unit tests: 15/15 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-10",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-11",
+      "description": "Scale-indexed selector: ST dispatch for x <= 10^10",
+      "status": "PASS"
+    },
+    {
+      "id": "P24-12",
+      "description": "Project scoreboard unified across all 24 phases",
+      "status": "PASS"
+    }
+  ]
+}

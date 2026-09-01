@@ -1,0 +1,66 @@
+{
+  "phase": 23,
+  "name": "The Diagnosis & Per-Phase Profiling: Finding the 17 Seconds",
+  "criteria": [
+    {
+      "id": "P23-1",
+      "description": "Per-phase timing breakdown at 10^14 captured on silicon via term_breakdown",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-2",
+      "description": "Root-cause diagnosis: 17s non-walker overhead traced to full-tree Lehmer recursive evaluation in GourdonCounter",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-3",
+      "description": "Opponent gap proven: Gourdon z-split restricts hard leaves to (y, z] (21k primes, 0.090s) vs un-split tree (14.20s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-4",
+      "description": "Substrate timing isolated: D Special Leaves MT measured at 6.732s",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-5",
+      "description": "S2 range sweep MT measured at 0.412s",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-6",
+      "description": "Prefix table initialization measured: Base primes 0.101s, PiTable 0.010s, Mertens 0.182s",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-7",
+      "description": "Truth Triangle: 20/20 identity points bit-exact against Lehmer ground truth",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-8",
+      "description": "Mertens anchors: 5/5 OEIS A084237 literature anchors verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-9",
+      "description": "Unit tests: 14/14 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-10",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-11",
+      "description": "Scale-indexed selector: ST dispatch for x <= 10^10",
+      "status": "PASS"
+    },
+    {
+      "id": "P23-12",
+      "description": "Project scoreboard unified across all 23 phases",
+      "status": "PASS"
+    }
+  ]
+}

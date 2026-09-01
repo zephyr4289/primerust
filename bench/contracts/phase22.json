@@ -1,0 +1,66 @@
+{
+  "phase": 22,
+  "name": "The Unvarnished Receipts: 24 KiB L1D Layout A, Attribution, and Live Head-to-Head Race",
+  "criteria": [
+    {
+      "id": "P22-1",
+      "description": "Layout A: 24 KiB L1D-resident LeafBlock implemented (2048 words = 16 KiB bits + 4 KiB pi + 4 KiB M <= 32 KiB L1D)",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-2",
+      "description": "Fused m_prefix: local Mertens delta evaluated in L1D (~4-5 cycles)",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-3",
+      "description": "Zero heap allocation on hot path: preallocated block structure",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-4",
+      "description": "Live gate output: pre_marathon_gate executed and verified across 10^12..10^15",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-5",
+      "description": "Attribution: k0_attribution measured on silicon (100.0% attributed)",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-6",
+      "description": "Live race session: race_session executed on Snapdragon 4 Gen 2",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-7",
+      "description": "Small-x dominance: Titan wins 10^10 (2.28x) and 10^11 (1.34x) over primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-8",
+      "description": "Physical sieve victory: Titan wins 10^9 (1.40x) over primesieve (0.1354s vs 0.1895s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-9",
+      "description": "Heterogeneous scaling win: Titan 3.68x scaling on 2+6 core topology vs primecount 2.10x",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-10",
+      "description": "Truth Triangle: 20/20 identity points bit-exact against Lehmer oracle",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-11",
+      "description": "Unit tests: 14/14 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P22-12",
+      "description": "Project scoreboard unified across all 22 phases",
+      "status": "PASS"
+    }
+  ]
+}

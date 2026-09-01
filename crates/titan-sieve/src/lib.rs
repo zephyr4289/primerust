@@ -9,7 +9,7 @@ pub mod presieve;
 pub mod segment;
 pub mod tally;
 
-pub const DEFAULT_SEGMENT_SIZE: usize = 65536; // 64 KiB L1D optimum on A76
+pub const DEFAULT_SEGMENT_SIZE: usize = 32768; // 32 KiB L1D optimum on SM4450 (A78 & A55)
 
 /// Count primes <= n using the default 64 KiB segment size.
 #[inline]

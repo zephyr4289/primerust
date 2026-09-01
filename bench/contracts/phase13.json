@@ -1,0 +1,56 @@
+{
+  "phase": 13,
+  "name": "The Race: Same Silicon, Same Session, No Excuses",
+  "criteria": [
+    {
+      "id": "P13-1",
+      "description": "R0 raw race table executed on same hardware: primecount (1T & 8T) vs titan (1T & 8T) at 10^10-10^14",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-2",
+      "description": "Opponent 8T/1T scaling factor measured (Titan heterogeneous pool 3.54x vs primecount OpenMP 2.45x)",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-3",
+      "description": "Physical sieve race executed: titan-sieve vs primesieve across 10^9-10^11",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-4",
+      "description": "R1 census counters recorded: T2 leaf counts, distinct-v bounds, factor distributions",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-5",
+      "description": "D-lock-3 Gourdon derivation document complete (docs/gourdon_derivation.md) with worked anchors",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-6",
+      "description": "Two-pass memory invariant proven: table capped at x^1/2, zero-alloc in steady-state",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-7",
+      "description": "Dynamic alpha parameterization defined: alpha in [1.5, 3.0]",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-8",
+      "description": "Marathon I & II bounds committed in advance",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-9",
+      "description": "Phone-native forfeit differentiators verified: atomic checkpoints, kill-9 resilience",
+      "status": "PASS"
+    },
+    {
+      "id": "P13-10",
+      "description": "Section B of reference.md updated with live on-device measurements",
+      "status": "PASS"
+    }
+  ]
+}

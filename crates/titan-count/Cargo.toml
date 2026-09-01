@@ -28,3 +28,59 @@ path = "src/bin/c7_census.rs"
 [[bin]]
 name = "count_marathon"
 path = "src/bin/count_marathon.rs"
+
+[[bin]]
+name = "c10_census"
+path = "src/bin/c10_census.rs"
+
+[[bin]]
+name = "lmo_gate"
+path = "src/bin/lmo_gate.rs"
+
+[[bin]]
+name = "matrix_bench"
+path = "src/bin/matrix_bench.rs"
+
+[[bin]]
+name = "lmo_ledger"
+path = "src/bin/lmo_ledger.rs"
+
+[[bin]]
+name = "race_session"
+path = "src/bin/race_session.rs"
+
+[[bin]]
+name = "substrate_census"
+path = "src/bin/substrate_census.rs"
+
+[[bin]]
+name = "v1_suite"
+path = "src/bin/v1_suite.rs"
+
+[[bin]]
+name = "alpha_sweep"
+path = "src/bin/alpha_sweep.rs"
+
+[[bin]]
+name = "k0_attribution"
+path = "src/bin/k0_attribution.rs"
+
+[[bin]]
+name = "pre_marathon_gate"
+path = "src/bin/pre_marathon_gate.rs"
+
+[[bin]]
+name = "term_breakdown"
+path = "src/bin/term_breakdown.rs"
+
+[[bin]]
+name = "z_split_census"
+path = "src/bin/z_split_census.rs"
+
+[[bin]]
+name = "census_2d_grid"
+path = "src/bin/census_2d_grid.rs"
+
+[[bin]]
+name = "arena_counters"
+path = "src/bin/arena_counters.rs"

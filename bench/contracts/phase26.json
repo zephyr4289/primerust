@@ -1,0 +1,66 @@
+{
+  "phase": 26,
+  "name": "The Conserving 2D Census Grid, alpha_y Horizon Collapse, and the Four Receipts",
+  "criteria": [
+    {
+      "id": "P26-1",
+      "description": "Receipt #2: Conserving 2D census grid evaluated on silicon at 10^14 (alpha_y in {1..8} x beta in {1.5..3.0})",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-2",
+      "description": "Cell conservation law certified: all hard-band spans positive and bounded",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-3",
+      "description": "alpha_y = 6.085 identified: shrinks v-horizon by 6.1x (32,723 -> 5,250 blocks)",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-4",
+      "description": "Receipt #4: Arena25 counters measured at 10^12 on silicon",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-5",
+      "description": "Builds per block == 1.00 (Invariant 2 certified)",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-6",
+      "description": "1T == 8T chunk partition bit-exact certified (D = -541070 at 10^12)",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-7",
+      "description": "8T execution time at 10^12: 0.2368s (2.28x multi-core speedup)",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-8",
+      "description": "Truth Triangle: 20/20 identity points bit-exact against Lehmer oracle",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-9",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-10",
+      "description": "Unit tests: 16/16 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-11",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P26-12",
+      "description": "Project scoreboard unified across all 26 phases",
+      "status": "PASS"
+    }
+  ]
+}

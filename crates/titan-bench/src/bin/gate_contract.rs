@@ -106,15 +106,17 @@ fn main() {
         let mut total_fail = 0;
         let mut total_owed = 0;
 
-        for p in 0..=5 {
-            let (pass, fail, owed) = eval_phase(p);
-            total_pass += pass;
-            total_fail += fail;
-            total_owed += owed;
+        for p in 0..=26 {
+            if Path::new(&format!("bench/contracts/phase{}.json", p)).exists() {
+                let (pass, fail, owed) = eval_phase(p);
+                total_pass += pass;
+                total_fail += fail;
+                total_owed += owed;
+            }
         }
 
         println!("\n============================================================");
-        println!("PROJECT RETRO-AUDIT SUMMARY (PHASES 0 - 5):");
+        println!("PROJECT RETRO-AUDIT SUMMARY (PHASES 0 - 26):");
         println!("  Total Certified Criteria : {}", total_pass + total_fail + total_owed);
         println!("  PASS                     : {}", total_pass);
         println!("  FAIL                     : {}", total_fail);
@@ -130,7 +132,7 @@ fn main() {
         }
     }
 
-    let phase: u32 = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(5);
+    let phase: u32 = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(7);
     let (_p, fail, owed) = eval_phase(phase);
     let code = (fail + owed) as i32;
     std::process::exit(code);

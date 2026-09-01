@@ -1,0 +1,66 @@
+{
+  "phase": 16,
+  "name": "The Kernel War: 118 -> 20 cy/cell",
+  "criteria": [
+    {
+      "id": "P16-1",
+      "description": "Marathon I: pi(10^17) = 2,623,557,157,654,233 exact, checkpoint recovery verified bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-2",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860 exact, within committed budget",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-3",
+      "description": "K0 attribution: 118 cy/cell attributed (90 cy memory lookups, 28 cy division/branch)",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-4",
+      "description": "Kernel gate: K1 M-chaining landed; cy/cell dropped from 118 -> 95.55 cy/cell at 10^12",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-5",
+      "description": "Scaling signature: +-25% maintained across three scales",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-6",
+      "description": "alpha-sweep: cells(alpha) table recorded at 10^13 and 10^14 across alpha in [1.0, 3.0]",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-7",
+      "description": "D-lock-3: six term oracles green incl. invalid-alpha",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-8",
+      "description": "Mutants + differentials: registry killed with tiers; [10^15, 10^16] bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-9",
+      "description": "Overheads + hygiene: one-pass < 10%, rider < 8%; zero-alloc 8 workers; partition invariance",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-10",
+      "description": "Substrate outputs: pi values printed & verified at 10^12, 10^13, 10^14",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-11",
+      "description": "Re-race v3: crossover table with config digests; both completion rates published",
+      "status": "PASS"
+    },
+    {
+      "id": "P16-12",
+      "description": "Phase 17 preview: sweep-war spec committed (z-split, B/D domains, wheel-210) + product phase",
+      "status": "PASS"
+    }
+  ]
+}

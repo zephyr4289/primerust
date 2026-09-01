@@ -74,7 +74,7 @@ impl PhiEngine {
             }
 
             let next_p = primes[i + 1];
-            if y < next_p * next_p {
+            if y < next_p * next_p && y <= pi_table.max_y {
                 self.census.t2_exits += 1;
                 let pi_y = pi_table.pi(y) as i64;
                 total += (sign as i64) * (pi_y - (i as i64) + 1);
@@ -128,13 +128,14 @@ impl PhiEngine {
             }
 
             let next_p = primes[i + 1];
-            if y < next_p * next_p {
+            if y < next_p * next_p && y <= pi_table.max_y {
                 let pi_y = pi_table.pi(y) as i64;
                 total += (sign as i64) * (pi_y - (i as i64) + 1);
                 continue;
             }
 
             // Left-spine collapse:
+            // Evaluates leaf (y, 6) in O(1) via phi_tiny
             let val = phi_tiny(y, 6) as i64;
             total += (sign as i64) * val;
 

@@ -1,0 +1,56 @@
+{
+  "phase": 11,
+  "name": "The One Measurement, Then the Marathons",
+  "criteria": [
+    {
+      "id": "P11-1",
+      "description": "--raw live on lmo_gate and matrix_bench; paste-backs are raw",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-2",
+      "description": "LMO term ledger at 10^12-10^14 with counters and memory column; collapse ratio emitted",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-3",
+      "description": "Decision-tree branch taken, recorded with its arithmetic",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-4",
+      "description": "Mutants 8/8 killed, tiers recorded; differentials [10^15, 10^16] >= 5 points bit-exact; zero-alloc; cross-engine 10^11",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-5",
+      "description": "S5: opponent baselined on 4 Gen 2, both columns, best-config; Section B live",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-6",
+      "description": "Ledger reconciliation table committed; both completion rates published",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-7",
+      "description": "Marathon I: pi(10^17) exact, cert-record, >= 5 kill-resumes, asserts green",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-8",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860, within 1.5x of committed target, checkpoints validated",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-9",
+      "description": "Thermal input recorded if Marathon II exceeded 10 min committed",
+      "status": "PASS"
+    },
+    {
+      "id": "P11-10",
+      "description": "Phase 12 preview committed: product phase (CLI, prime-streaming) + finale ledger",
+      "status": "PASS"
+    }
+  ]
+}

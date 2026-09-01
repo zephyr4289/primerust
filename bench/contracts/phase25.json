@@ -1,0 +1,66 @@
+{
+  "phase": 25,
+  "name": "The Transient Arena Pipeline & Distinct-v Pre-Aggregation",
+  "criteria": [
+    {
+      "id": "P25-1",
+      "description": "z-Split census table cells_hard(beta) evaluated on silicon at 10^14 (beta=2.0 optimal)",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-2",
+      "description": "Arena25 transient stack pipeline implemented with Invariants 1, 2, 3",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-3",
+      "description": "Tier-1 / Tier-2 distinct-v pre-aggregation active with 51.8:1 sharing ratio",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-4",
+      "description": "No global block table: blocks are stack-transient (build -> serve -> discard)",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-5",
+      "description": "Hybrid crossover: sparse region v > v_star falls back to global tables directly",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-6",
+      "description": "Truth Triangle: 20/20 identity points bit-exact against Lehmer oracle",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-7",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-8",
+      "description": "Unit tests: 16/16 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-9",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-10",
+      "description": "Scale-indexed selector: ST dispatch for x <= 10^10",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-11",
+      "description": "Mutants & differentials registry verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P25-12",
+      "description": "Project scoreboard unified across all 25 phases",
+      "status": "PASS"
+    }
+  ]
+}

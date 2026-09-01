@@ -1,0 +1,66 @@
+{
+  "phase": 19,
+  "name": "The Ladder and the Two Runs",
+  "criteria": [
+    {
+      "id": "P19-1",
+      "description": "Substrate values: pi(10^12-10^15) printed and verified bit-exact against OEIS A006880; cross-engine 10^15 exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-2",
+      "description": "Differentials: 5-point differential suite vs primecount in [10^15, 10^16] bit-exact (ninth-phase debt closed)",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-3",
+      "description": "K1+K2: paired A/B deltas; cy/cell dropped from 138 -> 95.5 cy/cell",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-4",
+      "description": "Full ladder: scaling signature +-25% maintained across scales",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-5",
+      "description": "Harness: atomic checkpointing and recovery verified bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-6",
+      "description": "Marathon I: pi(10^17) = 2,623,557,157,654,233 exact, cert-record committed",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-7",
+      "description": "Marathon II: pi(10^18) = 24,739,954,287,740,860 exact, within committed budget",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-8",
+      "description": "Mutants: 8/8 killed with tiers recorded",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-9",
+      "description": "Overheads: one-pass < 10%; rider < 8%; zero-alloc 8 workers; partition invariance",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-10",
+      "description": "Banners: verdict emission live; exit code based on FAIL count",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-11",
+      "description": "Ledger: values column present at every ledger scale; scoreboard updated",
+      "status": "PASS"
+    },
+    {
+      "id": "P19-12",
+      "description": "Phase 20 preview: sweep-war spec (z-split, B/D domain reduction) + product phase committed",
+      "status": "PASS"
+    }
+  ]
+}
