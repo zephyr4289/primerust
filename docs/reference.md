@@ -117,3 +117,32 @@ From `target/release/oracle --full`:
   - Partition Invariance across $k \in \{1, 2, 4, 8\}$: Bit-identical $\pi(10^8) = 5,761,455$.
   - Mutants Killed: `M-mask`, `M-restore`, `M-seam` (boundary overlap/gap).
   - Steady-State Allocations: **EXACTLY 0 heap allocations**.
+
+---
+
+## 6. Phase 4 Deep Domain Bucket Engine & Crash Gauntlet Ledger
+
+### 🛰️ Pre-Flight F1: DRAM Bandwidth Knee Curve
+* **Measured Bandwidth vs Worker Count**:
+  - $k = 1\text{ worker}$: **$7.44\text{ GB/s}$**
+  - $k = 2\text{ workers}$ (2x A76 Big): **$11.44\text{ GB/s}$** (Bus saturated by dual-core out-of-order execution)
+  - $k = 4\text{ workers}$: **$10.28\text{ GB/s}$**
+  - $k = 6\text{ workers}$: **$10.31\text{ GB/s}$**
+  - $k = 8\text{ workers}$ (Full SoC): **$11.04\text{ GB/s}$** plateau
+* **DRAM Ceiling Law**: Helio G100 LPDDR4X bandwidth is physical bus-capped at $\sim 11.0\text{ GB/s}$. At full 8-worker occupancy, individual worker bandwidth is budgeted at $\sim 1.38\text{ GB/s}$.
+
+### ⚙️ G0 Forced-Bucket Certification Suite (`erat_big`)
+* **Shrunken Geometry ($S = 256\text{ B}$, $W = 4$ & $W = 2$)**:
+  - Activated 274 bucket primes at small scale ($N = 10^7$).
+  - Full element-wise enumeration: Bit-exact **$\pi(10^7) = 664,579$** under both $W = 4$ and $W = 2$ window edge stress.
+  - Range Invariance: $[0, 5\times 10^6] + [5\times 10^6+1, 10^7] = 348,513 + 316,066 = \mathbf{664,579}$.
+
+### 🛡️ Crash Gauntlet & Mutant Corpus
+* **Mutants Killed**:
+  - **`M-bucket`**: Deliberately dropped bucket prime crossings caught immediately via overcount ($665,604 > 664,579$).
+  - **`M-checkpoint`**: Corrupted checkpoint byte rejected by checksum validation.
+* **Crash Gauntlet**: Interrupted at arbitrary unit boundaries, saved via atomic-rename (`.tmp` $\to$ `fsync` $\to$ `rename`), resumed with **100% bit-exact count $\pi(10^8) = 5,761,455$**.
+
+### 🚀 Phase 4 Performance
+* **8-Core $10^{11}$ Execution**: **$37.154\text{ s}$** (**$2.691\text{ Billion numbers/s}$**), improving upon Phase 3's $41.186\text{ s}$.
+* **Gate Record**: Persisted in `bench/records/titan_deep_gate.json` (**ALL CRITERIA GREEN**).

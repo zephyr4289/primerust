@@ -2,6 +2,7 @@
 
 pub mod arena;
 pub mod base;
+pub mod erat_big;
 pub mod erat_medium;
 pub mod erat_small;
 pub mod presieve;

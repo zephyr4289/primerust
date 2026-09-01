@@ -66,8 +66,22 @@ pub fn count_primes_with_arena(n: u64, seg_size_bytes: usize, arena: &mut SieveA
 
             if p <= arena.small_threshold {
                 arena.small_primes.push(SmallPrime::new(p, p2_byte as usize, p_res_bit));
-            } else {
+            } else if p <= arena.medium_threshold || arena.bucket_ring.is_none() {
                 arena.medium_primes.push(MediumPrime::new(p, p2_byte as usize, p_res_bit));
+            } else {
+                let ring = arena.bucket_ring.as_mut().unwrap();
+                let w = ring.window_size;
+                let cur_slot = seg_idx % w;
+                let p2_bit = wheel::WHEEL_NEXT[p_res_bit as usize][p_res_bit as usize];
+                let entry = crate::erat_big::BucketEntry::pack(
+                    p as u32,
+                    p2_byte as u32,
+                    p_res_bit,
+                    p_res_bit,
+                    p2_bit,
+                    0,
+                );
+                ring.push_ring(cur_slot, entry);
             }
             arena.base_frontier_idx += 1;
         }
@@ -104,6 +118,16 @@ pub fn count_primes_with_arena(n: u64, seg_size_bytes: usize, arena: &mut SieveA
         // 5. Cross off medium primes
         for p in arena.medium_primes.iter_mut() {
             p.cross_off(&mut arena.segment_buf);
+        }
+
+        // 5b. Drain bucket primes for current segment
+        if let Some(ref mut ring) = arena.bucket_ring {
+            let w = ring.window_size;
+            let slot = seg_idx % w;
+            if seg_idx > 0 && slot == 0 {
+                ring.advance_window();
+            }
+            ring.drain_segment(slot, &mut arena.segment_buf, s);
         }
 
         // 6. Tally segment
@@ -188,8 +212,22 @@ pub fn count_primes_range_direct(
 
         if p <= arena.small_threshold {
             arena.small_primes.push(SmallPrime::new(p, p_byte as usize, j));
-        } else {
+        } else if p <= arena.medium_threshold || arena.bucket_ring.is_none() {
             arena.medium_primes.push(MediumPrime::new(p, p_byte as usize, j));
+        } else {
+            let ring = arena.bucket_ring.as_mut().unwrap();
+            let target_slot = (p_byte as usize) / s;
+            let rel_byte = (p_byte as u32) % (s as u32);
+            let row = wheel::RESIDUE_TO_BIT[(p % 30) as usize];
+            let prod_bit = wheel::WHEEL_NEXT[row as usize][j as usize];
+            if target_slot < ring.window_size {
+                let entry = crate::erat_big::BucketEntry::pack(p as u32, rel_byte, j, row, prod_bit, 0);
+                ring.push_ring(target_slot, entry);
+            } else {
+                let rem_segs = (target_slot - ring.window_size) as u16;
+                let entry = crate::erat_big::BucketEntry::pack(p as u32, rel_byte, j, row, prod_bit, rem_segs);
+                ring.push_carry(entry);
+            }
         }
     }
 
@@ -208,6 +246,17 @@ pub fn count_primes_range_direct(
         }
         for p in arena.medium_primes.iter_mut() {
             p.cross_off(&mut arena.segment_buf);
+        }
+
+        // 2b. Drain bucket primes for current segment
+        if let Some(ref mut ring) = arena.bucket_ring {
+            let local_idx = seg_idx - start_seg_idx;
+            let w = ring.window_size;
+            let slot = local_idx % w;
+            if local_idx > 0 && slot == 0 {
+                ring.advance_window();
+            }
+            ring.drain_segment(slot, &mut arena.segment_buf, s);
         }
 
         // 3. Tally with head/tail masking if boundary segment

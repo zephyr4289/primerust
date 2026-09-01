@@ -1,5 +1,6 @@
 //! titan-pool: Lock-free heterogeneous siege engine for multi-core sieving.
 
+pub mod checkpoint;
 pub mod pool;
 pub mod telemetry;
 pub mod unit;

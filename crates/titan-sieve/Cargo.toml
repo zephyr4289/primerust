@@ -18,3 +18,8 @@ path = "src/bin/sieve_bench.rs"
 [[bin]]
 name = "e1_survey"
 path = "src/bin/e1_survey.rs"
+
+[[bin]]
+name = "forced_gate"
+path = "src/bin/forced_gate.rs"
+
