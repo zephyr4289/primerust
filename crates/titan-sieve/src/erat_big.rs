@@ -14,32 +14,27 @@
 
 use titan_core::wheel::{RESIDUES, WHEEL_INC, WHEEL_NEXT};
 
-pub const BLOCK_CAPACITY: usize = 512;
+pub const BLOCK_CAPACITY: usize = 256;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct BucketEntry(pub u64);
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct BucketEntry {
+    pub p: u32,
+    pub rel_byte: u32,
+    pub j: u8,
+    pub row: u8,
+    pub bit: u8,
+    pub rem_segs: u32,
+}
 
 impl BucketEntry {
     #[inline(always)]
-    pub fn pack(p: u32, rel_byte: u32, j: u8, row: u8, bit: u8, rem_segs: u16) -> Self {
-        let val = ((p as u64) & 0xFF_FFFF)
-            | (((rel_byte as u64) & 0x1_FFFF) << 24)
-            | (((j as u64) & 0x7) << 41)
-            | (((row as u64) & 0x7) << 44)
-            | (((bit as u64) & 0x7) << 47)
-            | (((rem_segs as u64) & 0x3FFF) << 50);
-        Self(val)
+    pub fn pack(p: u32, rel_byte: u32, j: u8, row: u8, bit: u8, rem_segs: u32) -> Self {
+        Self { p, rel_byte, j, row, bit, rem_segs }
     }
 
     #[inline(always)]
-    pub fn unpack(self) -> (u32, u32, u8, u8, u8, u16) {
-        let p = (self.0 & 0xFF_FFFF) as u32;
-        let rel_byte = ((self.0 >> 24) & 0x1_FFFF) as u32;
-        let j = ((self.0 >> 41) & 0x7) as u8;
-        let row = ((self.0 >> 44) & 0x7) as u8;
-        let bit = ((self.0 >> 47) & 0x7) as u8;
-        let rem_segs = ((self.0 >> 50) & 0x3FFF) as u16;
-        (p, rel_byte, j, row, bit, rem_segs)
+    pub fn unpack(self) -> (u32, u32, u8, u8, u8, u32) {
+        (self.p, self.rel_byte, self.j, self.row, self.bit, self.rem_segs)
     }
 }
 
@@ -52,7 +47,7 @@ pub struct BucketBlock {
 impl BucketBlock {
     pub fn new() -> Self {
         Self {
-            entries: [BucketEntry(0); BLOCK_CAPACITY],
+            entries: [BucketEntry::default(); BLOCK_CAPACITY],
             count: 0,
             next: None,
         }
@@ -218,7 +213,7 @@ impl BucketRing {
                     let next_entry = BucketEntry::pack(p, target_rel_byte, j, row, bit, 0);
                     to_ring.push((target_global_slot, next_entry));
                 } else {
-                    let rem_segs = (target_global_slot - w) as u16;
+                    let rem_segs = (target_global_slot - w) as u32;
                     let next_entry = BucketEntry::pack(p, target_rel_byte, j, row, bit, rem_segs);
                     to_carry.push(next_entry);
                 }
@@ -256,7 +251,7 @@ impl BucketRing {
                     let new_entry = BucketEntry::pack(p, rel_byte, j, row, bit, 0);
                     to_ring.push((target_slot, new_entry));
                 } else {
-                    let new_rem = rem_segs - (w as u16);
+                    let new_rem = rem_segs - (w as u32);
                     let new_entry = BucketEntry::pack(p, rel_byte, j, row, bit, new_rem);
                     new_carries.push(new_entry);
                 }

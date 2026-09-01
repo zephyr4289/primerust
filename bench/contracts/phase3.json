@@ -1,0 +1,51 @@
+{
+  "phase": 3,
+  "name": "Heterogeneous Multi-Core Pool Engine (titan-pool)",
+  "criteria": [
+    {
+      "id": "P3-1",
+      "description": "Pre-flight E1 cluster survey and weight vector calibration",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-2",
+      "description": "8-Core burst throughput at 10^10 >= 6.0 B/s (measured 6.172 B/s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-3",
+      "description": "8-Core sustained execution at 10^11 >= 2.0 B/s (measured 2.428 B/s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-4",
+      "description": "Load-balancing deviation <= 3% across heterogeneous clusters",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-5",
+      "description": "Partition invariance across k in {1, 2, 4, 8} at 10^8",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-6",
+      "description": "Mutants M-mask, M-restore, M-seam killed",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-7",
+      "description": "Affinity assertion: all 8 distinct cores actively recorded in telemetry",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-8",
+      "description": "Zero heap allocations during steady-state multi-core sieving",
+      "status": "PASS"
+    },
+    {
+      "id": "P3-9",
+      "description": "Oracle full mode interlock bit-exact up to 10^11",
+      "status": "PASS"
+    }
+  ]
+}

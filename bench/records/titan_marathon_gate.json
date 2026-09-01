@@ -1,0 +1,64 @@
+{
+  "phase": 6,
+  "name": "Terminal Lehmer & The Marathon Protocol",
+  "device": "Infinix Hot 50 Pro+ (MediaTek Helio G100 / MT6789)",
+  "topology": "2x Cortex-A76 @ 2.2 GHz + 6x Cortex-A55 @ 2.0 GHz, 8 GB LPDDR4X",
+  "ram_law_status": "COMPLIANT",
+  "table_span_10_14_bytes": 2662400,
+  "table_span_10_15_bytes": 8483840,
+  "table_span_10_16_bytes": 26707968,
+  "milestones": [
+    {
+      "scale": "10^10",
+      "expected_pi": 455052511,
+      "actual_pi": 455052511,
+      "time_seconds": 0.064,
+      "status": "PASS"
+    },
+    {
+      "scale": "10^11",
+      "expected_pi": 4118054813,
+      "actual_pi": 4118054813,
+      "time_seconds": 0.107,
+      "status": "PASS"
+    },
+    {
+      "scale": "10^12",
+      "expected_pi": 37607912018,
+      "actual_pi": 37607912018,
+      "time_seconds": 0.410,
+      "status": "PASS"
+    },
+    {
+      "scale": "10^13",
+      "expected_pi": 346065536839,
+      "actual_pi": 346065536839,
+      "time_seconds": 2.040,
+      "status": "PASS"
+    },
+    {
+      "scale": "10^14",
+      "expected_pi": 3204941750802,
+      "actual_pi": 3204941750802,
+      "time_seconds": 15.259,
+      "status": "PASS"
+    },
+    {
+      "scale": "10^15",
+      "expected_pi": 29844570422669,
+      "actual_pi": 29844570422669,
+      "time_seconds": 135.123,
+      "status": "PASS"
+    },
+    {
+      "scale": "10^16",
+      "expected_pi": 279238341033925,
+      "actual_pi": 279238341033925,
+      "time_seconds": 747.387,
+      "status": "PASS"
+    }
+  ],
+  "gauntlet_5_round_crash_resume": "PASS",
+  "mid_run_kill_resume_10_16": "PASS",
+  "c7_census_decision": "Spine-Split DFS selected (BFS Level-Banding rejected due to 3.3 GB memory footprint at 10^14)"
+}

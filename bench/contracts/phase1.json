@@ -1,0 +1,26 @@
+{
+  "phase": 1,
+  "name": "Wheel-30 & Presieve Primitives",
+  "criteria": [
+    {
+      "id": "P1-1",
+      "description": "Presieve clearing multiples of 7, 11, 13",
+      "status": "PASS"
+    },
+    {
+      "id": "P1-2",
+      "description": "Replica window invariance across arbitrary segment offsets",
+      "status": "PASS"
+    },
+    {
+      "id": "P1-3",
+      "description": "Wheel residue maps and step tables verified bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P1-4",
+      "description": "Phi-tiny lookup tables (k <= 6) matching direct definition",
+      "status": "PASS"
+    }
+  ]
+}

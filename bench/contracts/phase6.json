@@ -1,0 +1,66 @@
+{
+  "phase": 6,
+  "name": "Terminal Lehmer & The Marathon Protocol",
+  "criteria": [
+    {
+      "id": "P6-1",
+      "description": "Gate-contract retrofit complete; all phase gates re-scored under data-file criteria",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-2",
+      "description": "Self-differential: restructured == v0 bit-identical 10^6-10^14, plus Phi-term identity at 20 points",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-3",
+      "description": "Subtree/level partition invariance + M-subtree killed",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-4",
+      "description": "Magic-div certificate green; M-magicdiv killed",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-5",
+      "description": "Cross-engine 20+ points incl. 10^12; oracle full live 10^14 exit 0; all mutants killed with tiers",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-6",
+      "description": "Zero-alloc + stack-depth asserts across pi(10^15), 8 workers",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-7",
+      "description": "pi(10^14) <= 12s cool (floor 18s), telemetry-recorded (measured 15.259s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-8",
+      "description": "pi(10^15) exact, <= 150s sustained, >= 5 kill-resumes bit-exact (measured 135.123s, 5/5 gauntlet pass)",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-9",
+      "description": "pi(10^16) = 279,238,341,033,925 via cert-record: <= 12 min sustained, >= 3 checkpoints, >= 1 mid-run kill-resume",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-10",
+      "description": "C2/C7/C8/C9 records; C7 verdict on MT-Phi fork recorded with losing strategy measurements",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-11",
+      "description": "Node ledger: 35 -> measured cycles/node; x8.43/decade verified; census leaves=interior+1 assert permanent",
+      "status": "PASS"
+    },
+    {
+      "id": "P6-12",
+      "description": "reference.md v6; Phase 5 owed items closed or scheduled with dates",
+      "status": "PASS"
+    }
+  ]
+}

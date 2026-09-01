@@ -70,12 +70,9 @@ impl LehmerCounter {
             Err(idx) => idx,
         };
 
-        // Compute PiTable up to max(x / primes[a + 1] + 30, x_sqrt)
-        let max_table = if a + 1 < primes.len() {
-            (x / primes[a + 1] + 30).max(x_sqrt)
-        } else {
-            x_sqrt + 30
-        };
+        // RAM Law: PiTable span is hard-capped at max(x^1/2, p_{a+1}^2)
+        let p_a1 = if a + 1 < primes.len() { primes[a + 1] } else { x_root4 + 1 };
+        let max_table = x_sqrt.max(p_a1 * p_a1) + 30;
         let pi_table = PiTable::new(max_table);
 
         let phi_val = self.phi_engine.eval(x, a, &primes, &pi_table);
@@ -102,11 +99,15 @@ impl LehmerCounter {
         primes.push(0);
         primes.extend_from_slice(&base_primes);
 
-        let max_table = x_sqrt.max(x_cbrt * x_cbrt).min(x);
-        let pi_table = PiTable::new(max_table);
-
-        let b = pi_table.pi(x_sqrt) as usize;
-        let c = pi_table.pi(x_cbrt) as usize;
+        let b = match primes[1..].binary_search(&x_sqrt) {
+            Ok(idx) => idx + 1,
+            Err(idx) => idx,
+        };
+        let c = match primes[1..].binary_search(&x_cbrt) {
+            Ok(idx) => idx + 1,
+            Err(idx) => idx,
+        };
+        let pi_table = PiTable::new(x_sqrt + 30);
 
         let phi_val = self.phi_engine.eval(x, a, &primes, &pi_table);
         let t_val = compute_t(a, b);
@@ -114,6 +115,50 @@ impl LehmerCounter {
         let p3_val = compute_p3(x, a, c, &primes, &pi_table);
 
         let ans = (phi_val as i128) + (t_val as i128) - (p2_val as i128) - (p3_val as i128);
+        ans as u64
+    }
+
+    /// Exact multi-threaded evaluation of pi(x) using 8-core pool dispatch
+    pub fn count_mt(&self, x: u64, num_threads: usize) -> u64 {
+        if x < 100_000 || num_threads <= 1 {
+            let mut c = LehmerCounter::new();
+            return c.count(x);
+        }
+
+        let x_root4 = iroot4(x);
+        let x_cbrt = icbrt(x);
+        let x_sqrt = isqrt(x);
+
+        let max_prime_needed = (x_sqrt + 100).max(100);
+        let base_primes = titan_sieve::base::generate_base_primes(max_prime_needed);
+        let mut primes = Vec::with_capacity(base_primes.len() + 1);
+        primes.push(0);
+        primes.extend_from_slice(&base_primes);
+
+        let a = match primes[1..].binary_search(&x_root4) {
+            Ok(idx) => idx + 1,
+            Err(idx) => idx,
+        };
+        let b = match primes[1..].binary_search(&x_sqrt) {
+            Ok(idx) => idx + 1,
+            Err(idx) => idx,
+        };
+        let c = match primes[1..].binary_search(&x_cbrt) {
+            Ok(idx) => idx + 1,
+            Err(idx) => idx,
+        };
+
+        let p_a1 = if a + 1 < primes.len() { primes[a + 1] } else { x_root4 + 1 };
+        let max_table = x_sqrt.max(p_a1 * p_a1) + 30;
+        let pi_table = PiTable::new(max_table);
+
+        let phi_val = crate::phi::eval_mt(x, a, &primes, &pi_table, num_threads);
+        let t_val = compute_t(a, b);
+        let p2_val = crate::p2_sweep::compute_p2_mt(x, a, b, &primes, &pi_table, num_threads);
+        let p3_val = crate::p3::compute_p3_mt(x, a, c, &primes, &pi_table, num_threads);
+
+        let ans = (phi_val as i128) + (t_val as i128) - (p2_val as i128) - (p3_val as i128);
+        assert!(ans >= 0, "Negative count in assembly: {}", ans);
         ans as u64
     }
 }

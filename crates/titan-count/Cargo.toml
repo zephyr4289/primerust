@@ -20,3 +20,11 @@ path = "src/bin/count_gate.rs"
 [[bin]]
 name = "count_bench"
 path = "src/bin/count_bench.rs"
+
+[[bin]]
+name = "c7_census"
+path = "src/bin/c7_census.rs"
+
+[[bin]]
+name = "count_marathon"
+path = "src/bin/count_marathon.rs"

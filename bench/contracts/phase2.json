@@ -1,0 +1,36 @@
+{
+  "phase": 2,
+  "name": "Single-Core Physical Sieve Engine (titan-sieve)",
+  "criteria": [
+    {
+      "id": "P2-1",
+      "description": "L1D cache geometry sweep (64 KiB peak on A76)",
+      "status": "PASS"
+    },
+    {
+      "id": "P2-2",
+      "description": "Single-thread burst rate >= 2.225 B/s at 10^10 (measured 2.346 B/s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P2-3",
+      "description": "Range invariance [0, 5e7] + [5e7+1, 1e8] == pi(1e8)",
+      "status": "PASS"
+    },
+    {
+      "id": "P2-4",
+      "description": "Popcount differential verification vs trial division",
+      "status": "PASS"
+    },
+    {
+      "id": "P2-5",
+      "description": "Single-core sustained execution at 10^11 >= 1.5 B/s (measured 1.562 B/s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P2-6",
+      "description": "Base prime frontier generator verified against trial sieve",
+      "status": "PASS"
+    }
+  ]
+}

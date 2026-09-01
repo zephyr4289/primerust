@@ -1,0 +1,76 @@
+{
+  "phase": 4,
+  "name": "erat_big Bucket Architecture & Deep Sieve",
+  "criteria": [
+    {
+      "id": "P4-1",
+      "description": "Forced-bucket enumeration at N=10^7 with W=4 and W=2 (S=256B)",
+      "status": "PASS"
+    },
+    {
+      "id": "P4-2",
+      "description": "Forced suite 10^8 enumeration and mod-30 boundary matrix (Debt D4)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-3",
+      "description": "Mutant M-bucket killed via overcount detection",
+      "status": "PASS"
+    },
+    {
+      "id": "P4-4",
+      "description": "Mutant M-checkpoint killed via checksum tamper-detection",
+      "status": "PASS"
+    },
+    {
+      "id": "P4-5",
+      "description": "Mutants M-carry and M-ring killed with recorded tiers (Debt D3)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-6",
+      "description": "Live 10^12 physical oracle execution (Debt D1)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-7",
+      "description": "10^13 marathon cert-record (Debt D2)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-8",
+      "description": "Zero heap allocations during steady-state bucket sieving",
+      "status": "PASS"
+    },
+    {
+      "id": "P4-9",
+      "description": "True-scale crash gauntlet at 10^12 with 20 kill-9 resumes (Debt D6)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-10",
+      "description": "10^12 8T performance run >= 2.5 B/s sustained (Debt D1)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-11",
+      "description": "Pre-flight F1 DRAM knee curve reconciled with bus ceiling (11.04 GB/s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P4-12",
+      "description": "Primesieve 10^12 8T head-to-head comparison (Debt D7)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-13",
+      "description": "F2/F4 entries sweep and window depth scaling (Debt D5)",
+      "status": "OWED"
+    },
+    {
+      "id": "P4-14",
+      "description": "Gate record persisted in bench/records/titan_deep_gate.json",
+      "status": "PASS"
+    }
+  ]
+}

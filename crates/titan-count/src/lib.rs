@@ -1,6 +1,8 @@
 //! titan-count: Lehmer-class combinatorial prime counting engine.
 
 pub mod assembly;
+pub mod checkpoint;
+pub mod magic;
 pub mod p2_sweep;
 pub mod p3;
 pub mod phi;
@@ -22,6 +24,13 @@ pub fn pi_count_with_a(x: u64, a: usize) -> u64 {
     counter.count_with_a(x, a)
 }
 
+/// Exact multi-threaded combinatorial count of pi(x) across num_threads workers.
+#[inline]
+pub fn pi_count_mt(x: u64, num_threads: usize) -> u64 {
+    let counter = LehmerCounter::new();
+    counter.count_mt(x, num_threads)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -35,5 +44,15 @@ mod tests {
         assert_eq!(pi_count(100000), 9592);
         assert_eq!(pi_count(1000000), 78498);
         assert_eq!(pi_count(10000000), 664579);
+    }
+
+    #[test]
+    fn test_combinatorial_mt_equivalence() {
+        // Verify 100% equivalence between scalar and 8-thread MT evaluation
+        let x = 10_000_000u64;
+        let st_ans = pi_count(x);
+        let mt_ans = pi_count_mt(x, 8);
+        assert_eq!(st_ans, 664579);
+        assert_eq!(mt_ans, st_ans);
     }
 }

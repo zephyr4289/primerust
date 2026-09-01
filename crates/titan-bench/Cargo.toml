@@ -13,3 +13,7 @@ path = "src/bin/survey.rs"
 [[bin]]
 name = "benchref"
 path = "src/bin/benchref.rs"
+
+[[bin]]
+name = "gate_contract"
+path = "src/bin/gate_contract.rs"

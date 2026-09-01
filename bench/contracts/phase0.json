@@ -1,0 +1,31 @@
+{
+  "phase": 0,
+  "name": "Silicon Architecture & Baseline Survey",
+  "criteria": [
+    {
+      "id": "P0-1",
+      "description": "Cluster topology discovery (2x Cortex-A76 + 6x Cortex-A55)",
+      "status": "PASS"
+    },
+    {
+      "id": "P0-2",
+      "description": "Per-cluster uncontended solo sieve throughput benchmark",
+      "status": "PASS"
+    },
+    {
+      "id": "P0-3",
+      "description": "Contention efficiency and memory asymmetry survey",
+      "status": "PASS"
+    },
+    {
+      "id": "P0-4",
+      "description": "Thermal envelope and cliff timestamp identification (~14.5s)",
+      "status": "PASS"
+    },
+    {
+      "id": "P0-5",
+      "description": "Sustained derate multiplier calibration (0.454)",
+      "status": "PASS"
+    }
+  ]
+}

@@ -224,7 +224,7 @@ pub fn count_primes_range_direct(
                 let entry = crate::erat_big::BucketEntry::pack(p as u32, rel_byte, j, row, prod_bit, 0);
                 ring.push_ring(target_slot, entry);
             } else {
-                let rem_segs = (target_slot - ring.window_size) as u16;
+                let rem_segs = (target_slot - ring.window_size) as u32;
                 let entry = crate::erat_big::BucketEntry::pack(p as u32, rel_byte, j, row, prod_bit, rem_segs);
                 ring.push_carry(entry);
             }
@@ -303,6 +303,166 @@ pub fn count_primes_range(lo: u64, hi: u64, seg_size_bytes: usize) -> u64 {
     }
     let mut arena = SieveArena::new(hi, seg_size_bytes);
     count_primes_range_direct(lo, hi, seg_size_bytes, &mut arena)
+}
+
+/// Evaluates prime counts at specific thresholds across an interval [lo, hi]
+/// using a single-pass sweep with an ultra-fast intra-segment popcount walk.
+pub fn count_primes_range_with_thresholds(
+    lo: u64,
+    hi: u64,
+    seg_size_bytes: usize,
+    arena: &mut SieveArena,
+    thresholds: &[u64],
+    threshold_counts: &mut [u64],
+    initial_pi_before_lo: u64,
+) -> u64 {
+    if lo > hi || thresholds.is_empty() {
+        return initial_pi_before_lo;
+    }
+
+    let s = seg_size_bytes;
+    let seg_span = (s as u64) * 30;
+
+    let start_seg_idx = (lo / seg_span) as usize;
+    let end_seg_idx = (hi / seg_span) as usize;
+    let aligned_low = (start_seg_idx as u64) * seg_span;
+
+    arena.reset();
+
+    for &p in &arena.base_primes {
+        if p * p > hi {
+            break;
+        }
+        let target_m = p.max((aligned_low + p - 1) / p);
+        let rem = (target_m % 30) as usize;
+        let next_res = wheel::NEXT_COPRIME[rem] as u64;
+        let m = if next_res >= (rem as u64) {
+            (target_m / 30) * 30 + next_res
+        } else {
+            (target_m / 30 + 1) * 30 + next_res
+        };
+
+        let mult = p * m;
+        let p_byte = (mult / 30) - (aligned_low / 30);
+        let j = wheel::RESIDUE_TO_BIT[(m % 30) as usize];
+
+        if p <= arena.small_threshold {
+            arena.small_primes.push(SmallPrime::new(p, p_byte as usize, j));
+        } else if p <= arena.medium_threshold || arena.bucket_ring.is_none() {
+            arena.medium_primes.push(MediumPrime::new(p, p_byte as usize, j));
+        } else {
+            let ring = arena.bucket_ring.as_mut().unwrap();
+            let target_slot = (p_byte as usize) / s;
+            let rel_byte = (p_byte as u32) % (s as u32);
+            let row = wheel::RESIDUE_TO_BIT[(p % 30) as usize];
+            let prod_bit = wheel::WHEEL_NEXT[row as usize][j as usize];
+            if target_slot < ring.window_size {
+                let entry = crate::erat_big::BucketEntry::pack(p as u32, rel_byte, j, row, prod_bit, 0);
+                ring.push_ring(target_slot, entry);
+            } else {
+                let rem_segs = (target_slot - ring.window_size) as u32;
+                let entry = crate::erat_big::BucketEntry::pack(p as u32, rel_byte, j, row, prod_bit, rem_segs);
+                ring.push_carry(entry);
+            }
+        }
+    }
+
+    let mut running_pi = initial_pi_before_lo;
+    let mut th_idx = 0;
+
+    for seg_idx in start_seg_idx..=end_seg_idx {
+        let cur_seg_low = (seg_idx as u64) * seg_span;
+        let cur_seg_high = cur_seg_low + seg_span - 1;
+
+        // 1. Presieve
+        arena.presieve.init_segment(seg_idx, &mut arena.segment_buf);
+
+        // 2. Cross off primes
+        for p in arena.small_primes.iter_mut() {
+            p.cross_off(&mut arena.segment_buf);
+        }
+        for p in arena.medium_primes.iter_mut() {
+            p.cross_off(&mut arena.segment_buf);
+        }
+
+        if let Some(ref mut ring) = arena.bucket_ring {
+            let local_idx = seg_idx - start_seg_idx;
+            let w = ring.window_size;
+            let slot = local_idx % w;
+            if local_idx > 0 && slot == 0 {
+                ring.advance_window();
+            }
+            ring.drain_segment(slot, &mut arena.segment_buf, s);
+        }
+
+        // 3. Process thresholds falling in this segment with a continuous byte-walk
+        let offset_before_lo = if cur_seg_low < lo {
+            let lo_byte = ((lo - cur_seg_low) / 30) as usize;
+            let lo_rem = (lo % 30) as u8;
+            let mut count_before = 0u64;
+            for b in 0..lo_byte {
+                count_before += arena.segment_buf[b].count_ones() as u64;
+            }
+            let mut mask = 0u8;
+            for r in 0..8 {
+                if wheel::RESIDUES[r] < lo_rem {
+                    mask |= 1 << r;
+                }
+            }
+            count_before += (arena.segment_buf[lo_byte] & mask).count_ones() as u64;
+            count_before
+        } else {
+            0
+        };
+
+        let mut cur_walk_byte = 0usize;
+        let mut intra_walk_sum = 0u64;
+
+        while th_idx < thresholds.len() && thresholds[th_idx] <= cur_seg_high {
+            let t = thresholds[th_idx];
+            if t < cur_seg_low {
+                threshold_counts[th_idx] = initial_pi_before_lo;
+                th_idx += 1;
+                continue;
+            }
+
+            let target_byte = ((t - cur_seg_low) / 30) as usize;
+            let target_rem = (t % 30) as u8;
+
+            // Advance intra_walk_sum up to target_byte
+            while cur_walk_byte < target_byte {
+                intra_walk_sum += arena.segment_buf[cur_walk_byte].count_ones() as u64;
+                cur_walk_byte += 1;
+            }
+
+            // Final byte mask
+            let mut mask = 0u8;
+            for r in 0..8 {
+                if wheel::RESIDUES[r] <= target_rem {
+                    mask |= 1 << r;
+                }
+            }
+            let final_byte_count = (arena.segment_buf[target_byte] & mask).count_ones() as u64;
+
+            let primes_in_seg_to_t = (intra_walk_sum + final_byte_count).saturating_sub(offset_before_lo);
+            threshold_counts[th_idx] = running_pi + primes_in_seg_to_t;
+            th_idx += 1;
+        }
+
+        // 4. Full segment popcount
+        let seg_primes = count_segment(&mut arena.segment_buf, s, 7);
+        running_pi += seg_primes.saturating_sub(offset_before_lo);
+
+        // 5. Translation update
+        for p in arena.small_primes.iter_mut() {
+            p.byte = p.byte.saturating_sub(s);
+        }
+        for p in arena.medium_primes.iter_mut() {
+            p.byte = p.byte.saturating_sub(s as u32);
+        }
+    }
+
+    running_pi
 }
 
 #[cfg(test)]

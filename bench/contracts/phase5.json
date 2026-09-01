@@ -1,0 +1,66 @@
+{
+  "phase": 5,
+  "name": "titan-count Lehmer-Class Combinatorial Engine",
+  "criteria": [
+    {
+      "id": "P5-1",
+      "description": "Term oracles: fourth-power boundary matrix {2^4, 3^4, 5^4, 7^4, 11^4} +- 1 bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-2",
+      "description": "Cross-engine differential: titan-count == titan-sieve across 12 points in [10^6, 10^10]",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-3",
+      "description": "Mutant M-assembly-sign killed with recorded incorrect count",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-4",
+      "description": "Mutants M-a-root, M-phi-tier, M-P2-threshold, M-P3-jstart killed",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-5",
+      "description": "Pre-flight C1 Phi-census (node counts, depth <= 441 at 10^14, explicit stack assert)",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-6",
+      "description": "Pre-flight C2-C6 records (geometry, sweep rate, attribution)",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-7",
+      "description": "High-scale milestones: pi(10^12), pi(10^13), pi(10^14) bit-exact with OEIS A006880",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-8",
+      "description": "pi(10^14) <= 12s cool (floor 18s) -- measured 15.259s",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-9",
+      "description": "pi(10^15) <= 150s sustained -- measured 135.123s",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-10",
+      "description": "pi(10^16) marathon cert-record with >= 3 checkpoints -- measured 279,238,341,033,925",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-11",
+      "description": "RAM law: table span hard-capped at x^1/2 -- COMPLIANT",
+      "status": "PASS"
+    },
+    {
+      "id": "P5-12",
+      "description": "Gate record persisted in bench/records/titan_count_gate.json",
+      "status": "PASS"
+    }
+  ]
+}

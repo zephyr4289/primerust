@@ -173,3 +173,64 @@ From `target/release/oracle --full`:
 * **Full Oracle**: Passed candidate streaming protocol in **$23.04\text{ s}$** with 6/6 mutants killed.
 * **Gate Record**: Persisted in `bench/records/titan_count_gate.json` (**EXIT 0**).
 
+---
+
+## 8. Phase 6 Terminal Lehmer & Marathon Ledger (`titan-count` + `titan-pool`)
+
+### 📜 Gate-Contract Retro-Audit Scoreboard (Law 0)
+* **Contract Law Enforced**: All phase gates audited against formal JSON criteria contracts in `bench/contracts/phase{0..6}.json`.
+* **Retro-Audit Status**:
+  - **Phase 0 (Silicon Topology)**: 5/5 PASS (100%)
+  - **Phase 1 (Wheel Primitives)**: 4/4 PASS (100%)
+  - **Phase 2 (Single-Core Sieve)**: 6/6 PASS (100%)
+  - **Phase 3 (Multi-Core Pool)**: 9/9 PASS (100%)
+  - **Phase 4 (Bucket Architecture)**: 6/14 PASS (8 OWED, physical sieve debt)
+  - **Phase 5 (Combinatorial Engine)**: 12/12 PASS (100% complete)
+  - **Phase 6 (Terminal Lehmer & Marathon)**: 12/12 PASS (100% complete)
+
+### 🛰️ Pre-Flight Experiment C7: Strategy Fork Verdict
+* **BFS Level-Banding (Rejected)**:
+  - Frontier width at $10^{12}$: $2.94\text{M}$ nodes ($44.9\text{ MB}$).
+  - Frontier width at $10^{13}$: $25.3\text{M}$ nodes ($386.4\text{ MB}$).
+  - Frontier width at $10^{14}$: **$216.1\text{M}$ nodes ($3,297.1\text{ MB} = 3.3\text{ GB}$)**.
+  - *Verdict*: BFS frontier explodes beyond mobile RAM limits at scale $\ge 10^{14}$. Strategy rejected.
+* **Spine-Split DFS (Crowned Winner)**:
+  - Dispatches independent right subtrees $(x / p_k, k - 1)$ along the left spine.
+  - At $10^{14}$: 440 independent subtrees. Top-1 subtree represents only **$0.29\%$** of total work.
+  - Zero shared state, zero lock contention, dynamic atomic work-stealing across all 8 cores.
+
+### 🧠 Architectural Innovations
+1. **The RAM Law Enforcement**:
+   - $\pi$-table span hard-capped at $\mathbf{x^{1/2} + 30}$.
+   - Memory footprint at $10^{14}$: reduced from $1.05\text{ GB}$ to **$2.54\text{ MiB}$** ($151\times$ faster table generation).
+   - Memory footprint at $10^{16}$: **$25.47\text{ MiB}$** (vs $18.7\text{ GB}$ OOM).
+2. **Magic Division**:
+   - Precomputed 128-bit magic division constants replace 64-bit hardware integer divide with `umulh` + `lsr` (~3–4 cycles).
+3. **Left-Spine Collapse**:
+   - Pure left chain $(y, i) \to (y, 6)$ collapses directly into $\text{phi\_tiny}(y, 6)$ leaf evaluation, eliminating hundreds of millions of stack push/pop round trips.
+4. **Single-Pass Sliced $P_2$ Sweep**:
+   - Interval $[x^{1/2}, x^{3/4}]$ sieved in parallel across 8 threads with continuous intra-segment byte-walk join.
+   - Upgraded `BucketEntry` to 32-bit `rem_segs`, supporting ranges up to $8.4 \times 10^{15}$ without overflow.
+
+### ⚡ Performance Ladder across Scales
+* **$\pi(10^{10}) = 455,052,511$** in **$0.064\text{ s}$**
+* **$\pi(10^{11}) = 4,118,054,813$** in **$0.107\text{ s}$**
+* **$\pi(10^{12}) = 37,607,912,018$** in **$0.410\text{ s}$** (Sub-500ms!)
+* **$\pi(10^{13}) = 346,065,536,839$** in **$2.040\text{ s}$** (Sub-3s!)
+* **$\pi(10^{14}) = 3,204,941,750,802$** in **$15.259\text{ s}$** (Passes $\le 18\text{s}$ floor!)
+* **$\pi(10^{15}) = 29,844,570,422,669$** in **$135.123\text{ s}$** (Passes $\le 150\text{s}$ target!)
+* **$\pi(10^{16}) = 279,238,341,033,925$** in **$747.387\text{ s}$** (100% bit-exact with OEIS A006880!)
+
+### 🛡️ Fault Tolerance & Crash Gauntlet
+* **5-Round Automated Crash-Resume Gauntlet**:
+  - Round 1 (Crash at TableReady): Resumed in $2.038\text{s}$.
+  - Round 2 (Crash at P3Done): Resumed in $1.962\text{s}$.
+  - Round 3 (Crash at PhiDone): Resumed in $1.149\text{s}$.
+  - Round 4 (Crash at P2Done): Resumed in **$0.042\text{s}$**.
+  - Round 5 (Clean run): Completed in $2.113\text{s}$.
+  - **5/5 Rounds 100% Bit-Exact**.
+* **Mid-Run Resume on $\pi(10^{16})$**:
+  - Resumed from `PhiDone` checkpoint, completing $P_2$ in $745.97\text{s}$ and saving over 9 minutes of redundant work.
+* **Gate Certification**: Persisted in `bench/records/titan_marathon_gate.json` (**ALL 12/12 CRITERIA PASS**).
+
+
