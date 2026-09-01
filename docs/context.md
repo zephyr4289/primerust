@@ -104,37 +104,47 @@ Any future agent modifying this codebase MUST adhere strictly to these principle
 
 ---
 
-## 5. Phase-by-Phase Certified Ledger
+## 5. Phase-by-Phase Certified Ledger (Phases 0 Through 26)
 
 ```
 ============================================================
-         TITAN HONEST RETRO-AUDIT SCOREBOARD (LAW 0)        
-============================================================
-=== PHASE 0: Silicon Architecture        === 5 PASS, 0 FAIL, 0 OWED (100%)
-=== PHASE 1: Wheel-30 & Presieve Prims   === 4 PASS, 0 FAIL, 0 OWED (100%)
-=== PHASE 2: Single-Core Physical Sieve  === 6 PASS, 0 FAIL, 0 OWED (100%)
-=== PHASE 3: Multi-Core Pool Engine      === 9 PASS, 0 FAIL, 0 OWED (100%)
-=== PHASE 4: erat_big Bucket Engine      === 6 PASS, 0 FAIL, 8 OWED (Debt)
-=== PHASE 5: Combinatorial Crown         === 12 PASS, 0 FAIL, 0 OWED (100%)
-=== PHASE 6: Terminal Lehmer & Marathon  === 12 PASS, 0 FAIL, 0 OWED (100%)
+PROJECT RETRO-AUDIT SUMMARY (PHASES 0 - 26):
+  Total Certified Criteria : 272
+  PASS                     : 264
+  FAIL                     : 0
+  OWED                     : 8 (Phase 4 Physical-Sieve Debt)
+  True Completion Rate     : 97.1%
 ============================================================
 ```
 
-### Phase Summaries:
-* **Phase 0 (Silicon Exploration)**: Mapped 2 A76 + 6 A55 topology, memory bandwidth, thermal cliff (~14.5s), and derate factor (0.454).
-* **Phase 1 (Wheel Primitives)**: Verified Wheel-30 coprime maps, presieve pattern for 7, 11, 13, and closed-form $\Phi$-tiny tables ($k \le 6$).
-* **Phase 2 (`titan-sieve`)**: Peak L1D segment geometry (64 KiB), single A76 burst $\ge 2.225\text{ B/s}$ ($2.346\text{ B/s}$ measured), sustained $10^{11} \ge 1.5\text{ B/s}$ ($1.562\text{ B/s}$).
-* **Phase 3 (`titan-pool`)**: 8-Core pool dispatch, burst throughput $\ge 6.0\text{ B/s}$ ($6.172\text{ B/s}$), sustained $10^{11} \ge 2.0\text{ B/s}$ ($2.428\text{ B/s}$), core affinity verified.
-* **Phase 4 (`erat_big`)**: Forced-bucket enumeration at $N = 10^7$ ($W=4, 2$), F1 DRAM knee curve (11.04 GB/s ceiling), crash-resume unit checkpointing. *Note*: 8 physical-sieve debts (D1–D8) remain for multi-hour physical sieve runs at $10^{12}..10^{13}$, which were superseded by the combinatorial engine.
-* **Phase 5 (`titan-count` v0)**: C1 $\Phi$-census, PiTable prefix sums, fourth-power boundary matrix, cross-engine differential vs `titan-sieve`.
-* **Phase 6 (Terminal Lehmer & Marathon)**:
-  - Pre-flight C7 census arbitrated between BFS Level-Banding and Spine-Split DFS (Spine-Split selected; BFS rejected due to 3.3 GB memory explosion).
-  - Magic Division (3 cycles) + Left-Spine Collapse implemented.
-  - Multi-threaded $\Phi$, $P_2$, $P_3$ over 8-core pool.
-  - Upgraded `BucketEntry` to 32-bit `rem_segs` (curing $10^{12}$ bucket overflow).
-  - 5-Round crash gauntlet verified bit-exact.
-  - $\pi(10^{15})$ in **$135.12\text{s}$** ($\le 150\text{s}$ target).
-  - $\pi(10^{16})$ in **$747.38\text{s}$** (**$279,238,341,033,925$** exact).
+### Phase Evolution & Milestone Index:
+* **Phases 0–3 (Silicon & Physical Foundation)**: Silicon topology profiling, Wheel-30 presieve primitives, peak L1D cache sizing, and 8-thread affinity-aware pool dispatch.
+* **Phase 4 (`erat_big` Bucket Architecture)**: Forced-bucket enumeration, F1 DRAM knee curve, and crash-resume unit checkpointing (8 historical physical-sieve debts D1–D8 preserved per Law 0).
+* **Phases 5–6 (Lehmer Combinatorial Engine & Marathon)**:
+  - C1 & C7 censuses; Spine-Split DFS crowned over BFS Level-Banding.
+  - RAM Law enforcement: PiTable hard-capped at $x^{1/2} + 30$ ($25.5\text{ MiB}$ at $10^{16}$).
+  - 3-cycle Magic Division, Left-Spine Collapse, and 32-bit `BucketEntry` `rem_segs`.
+  - Certified $\pi(10^{15}) = 29,844,570,422,669$ in $135\text{s}$ and $\pi(10^{16}) = 279,238,341,033,925$ in $747\text{s}$.
+* **Phases 7–8 (Meissel Substrate & Combinatorial Refinement)**:
+  - Meissel's formula implementation with $P_3 \equiv 0$ and $x^{2/3}$ ceiling.
+* **Phases 9–20 (The Gourdon Transition & Marathons I & II)**:
+  - Full 5-term Gourdon identity substrate (`gourdon.rs`).
+  - The Interval Walker (`interval_walker.rs`) with constant-$v$ run splitting, K1 $M$-chaining, and K2 $\pi$-streaming.
+  - $\mu$-Rider (`mu_rider.rs`): $p^2$-squarefree marking riding the physical sieve loops ($< 8\%$ overhead).
+  - Checkpointed Mertens structure (`mertens_struct.rs`) for $O(1)$ interval $\mu$-sums.
+  - **Marathon I**: Certified $\pi(10^{17}) = 2,623,557,157,654,233$.
+  - **Marathon II**: Certified $\pi(10^{18}) = 24,739,954,287,740,860$.
+* **Phases 21–23 (LeafBlock Architecture & Hardware Profiling)**:
+  - Segment-local LeafBlock with L1D-resident $v$-axis block slices.
+  - Layout A: 24 KiB L1D-resident LeafBlock (16 KiB bits + 4 KiB $\pi$ + 4 KiB $M$).
+  - Attribution tracking ($|attributed - wall| < 5\%$) and live race against `primecount` on silicon.
+* **Phases 24–26 (Layout B, Arena25 & Conserving 2D Dial Census)**:
+  - Flat analytical $\Phi_c$ evaluator (`phi_flat.rs`).
+  - **Layout B**: 16.1 KiB L1D-resident `LeafBlockB` with 2-bit $\mu$ stream and SWAR within-word decoding (8–10 cycles).
+  - **Arena25**: Transient stack pipeline with distinct-$v$ pre-aggregation (51.8:1 sharing ratio; builds per block $\equiv 1.00$).
+  - **Receipt #2 & #4**: Conserving 2D census grid on silicon with $\alpha_y = 6.085$, shrinking $v$-horizon by $6.1\times$.
+  - Certified `1T == 8T` chunk partition invariance at $10^{12}$ ($D = -541,070$).
+  - See [`nano/PROJECT_TITAN_MASTER_BLUEPRINT.md`](file:///data/data/com.termux/files/home/primerust/nano/PROJECT_TITAN_MASTER_BLUEPRINT.md) for full architectural blueprints.
 
 ---
 
