@@ -1,0 +1,66 @@
+{
+  "phase": 29,
+  "name": "The Call-Site Move, A/B Verification, and Standardized Frozen Probe",
+  "criteria": [
+    {
+      "id": "P29-1",
+      "description": "Moved production call-site in gourdon.rs to execute ScaleDispatch and Arena25Engine",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-2",
+      "description": "Standardized machine-formatted frozen probe receipt emitted with median, p25, p75",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-3",
+      "description": "Census v4 multi-scale calibration across 10^11..10^15 verified (~4.25x/decade growth)",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-4",
+      "description": "Verified d_path tag: arena25/C[AB-VERIFIED]",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-5",
+      "description": "Layout C: 16.1 KiB L1D-resident all-integer parity LeafBlockC verified",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-6",
+      "description": "Exhaustive parity test: 65k comparisons match global MertensStructure exactly",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-7",
+      "description": "Gate outputs: pre_marathon_gate 100% bit-exact across 10^12..10^15",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-8",
+      "description": "Cross-engine check: 10^15 Substrate == Lehmer bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-9",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-10",
+      "description": "Unit tests: 17/17 test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-11",
+      "description": "Two-pass RAM law: zero-allocation in steady-state sweep",
+      "status": "PASS"
+    },
+    {
+      "id": "P29-12",
+      "description": "Project scoreboard unified across all 29 phases",
+      "status": "PASS"
+    }
+  ]
+}

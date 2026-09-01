@@ -96,3 +96,7 @@ path = "src/bin/parity_check.rs"
 [[bin]]
 name = "frozen_probe"
 path = "src/bin/frozen_probe.rs"
+
+[[bin]]
+name = "census_v4"
+path = "src/bin/census_v4.rs"
