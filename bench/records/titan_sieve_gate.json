@@ -1,0 +1,1 @@
+{"phase":"2","status":"PASS","elapsed_sec":13.232,"burst_rate_b_s":2.338,"sustained_rate_b_s":1.531,"zero_alloc_delta":0,"mutants_caught":["M-mask","M-restore"]}

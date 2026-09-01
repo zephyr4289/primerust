@@ -1,0 +1,16 @@
+[package]
+name = "titan-sieve"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+titan-core = { path = "../titan-core" }
+titan-bench = { path = "../titan-bench" }
+
+[[bin]]
+name = "sieve_gate"
+path = "src/bin/sieve_gate.rs"
+
+[[bin]]
+name = "sieve_bench"
+path = "src/bin/sieve_bench.rs"

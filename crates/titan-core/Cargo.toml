@@ -1,0 +1,11 @@
+[package]
+name = "titan-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Zero runtime dependencies — pure mathematical substrate
+
+[[bin]]
+name = "core_gate"
+path = "src/bin/core_gate.rs"

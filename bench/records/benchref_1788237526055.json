@@ -1,0 +1,1 @@
+{"cmd":"/data/data/com.termux/files/home/primesieve-ref/build/primesieve 1e11 --threads 8","work":100000000000,"expected":Some(4118054813),"total_runs":1,"median_raw_rate":5477346698.68,"median_norm_rate":6345728242.87,"runs":[{"wall_sec":18.2570,"raw_rate":5477346698.68,"derate":0.8632,"norm_rate":6345728242.87}]}

@@ -1,0 +1,887 @@
+# Phase 0 — The Instrumentation Forge
+
+Before any sieve code exists, we build the **measurement and verification instruments** that every later phase is judged by. Phase 0 has one law: **you may not optimize what you cannot measure, and you may not trust what you cannot verify.**
+
+## 0.1 — System Design: The Instrument Stack
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PHASE 0 INSTRUMENT STACK                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  CPU CANARY ──── fixed-work L1-resident probe ──► frequency      │
+│  MEM CANARY ──── 8MiB streaming probe ─────────► DRAM bandwidth  │
+│  PER-CORE SURVEY ─ pinned identical work/core ─► throughput      │
+│                                                  vector (big:little)│
+│  HEATSOAK ────── all-core load + live derate ──► thermal curve   │
+│  ORACLE STACK ── 3 interlocked truth layers ───► correctness     │
+│  BENCHREF ────── canary-normalized externals ──► honest baseline │
+└─────────────────────────────────────────────────────────────────┘
+
+  Truth interlock triangle:
+   OEIS A006880 (literature) ⟷ trial division (ours) ⟷ primecount (Walisch)
+   Each layer independently verifies the other two.
+```
+
+**Instrument contracts:**
+
+| Instrument | Contract | Failure mode it kills |
+|---|---|---|
+| CpuCanary | Identical instruction stream every invocation; 8KiB L1-resident data; **serial dependency chain** (xor→cnt→add) so ILP cannot mask frequency; checksum consumed via `black_box` | "30B/sec" benchmarks that silently measured a throttled core |
+| Pinning | Every measurement pinned via `sched_setaffinity` — Android migrates tasks between A76/A55, which *destroys* frequency signals | Canary reading 50% slow because the scheduler moved us to a little core, mistaken as "throttling" |
+| Survey | Solo rate + all-core rate per core → **contention factor** (Σsolo ≠ all-core, always) | Naive "8 cores = 8× throughput" planning |
+| Oracle tiers | T1 exhaustive/boundary → T2 mid → T3 literature constants. Candidates declare `max_x`; full mode mandatory for the gate | The seive.md disease: small tests pass, big-x lies |
+| Mutation gate | 5 known-bad implementations must ALL be caught; an oracle that can't detect injected defects is theater | Trusting an untested test suite |
+| Records | Every run → JSON with env snapshot (loadavg, battery, topology, rustc) into `bench/records/` | Unrecorded benchmarks = folklore |
+
+**Spec amendment** (log in file_structure.md): new crate `titan-bench` (canary/survey/hygiene/records). `titan-oracle` stays **fully independent** — zero shared code with anything it verifies, including utilities. The oracle must not inherit bugs from the things it judges.
+
+---
+
+## 0.2 — The Code
+
+### Workspace root — `Cargo.toml`
+```toml
+[workspace]
+resolver = "2"
+members = ["crates/titan-bench", "crates/titan-oracle"]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+debug = true        # keep symbols for later perf work
+```
+
+### `crates/titan-bench/Cargo.toml`
+```toml
+[package]
+name = "titan-bench"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libc = "0.2"
+
+[[bin]]
+name = "survey"
+path = "src/bin/survey.rs"
+
+[[bin]]
+name = "benchref"
+path = "src/bin/benchref.rs"
+```
+
+### `crates/titan-bench/src/lib.rs`
+```rust
+pub mod canary;
+pub mod pin;
+pub mod proxy;
+pub mod snapshot;
+pub mod stats;
+pub mod topology;
+```
+
+### `crates/titan-bench/src/stats.rs`
+```rust
+/// Robust statistics: median + MAD (immune to Android background-jitter outliers).
+pub struct SampleStats {
+    pub n: usize, pub min: f64, pub max: f64,
+    pub median: f64, pub mad: f64, pub mean: f64,
+}
+
+pub fn describe(mut v: Vec<f64>) -> SampleStats {
+    assert!(!v.is_empty());
+    v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let n = v.len();
+    let median = v[n / 2];
+    let mut d: Vec<f64> = v.iter().map(|&x| (x - median).abs()).collect();
+    d.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    SampleStats {
+        n, min: v[0], max: v[n - 1], median, mad: d[n / 2],
+        mean: v.iter().sum::<f64>() / n as f64,
+    }
+}
+```
+
+### `crates/titan-bench/src/canary.rs`
+```rust
+//! Fixed-work probes. Same binary => same instruction stream => rate ∝ core speed.
+use std::time::Instant;
+
+/// CPU frequency probe.
+/// CONTRACT:
+///  * 8 KiB buffer (L1D-resident on A55 32K and A76 64K) — measures speed, not memory
+///  * serial chain: acc -> (v^acc).popcnt -> +acc : no ILP can hide frequency droop
+///  * fixed epoch count => duration itself is the signal (longer = slower)
+///  * returns checksum; caller MUST black_box it
+pub struct CpuCanary {
+    buf: Box<[u64; 1024]>,
+    pub epochs: u32,
+}
+
+pub const CANARY_M: u32 = 5000; // ~8-12 ms at 2.2 GHz
+
+impl CpuCanary {
+    pub fn with_epochs(epochs: u32) -> Self {
+        let mut buf = Box::new([0u64; 1024]);
+        let mut x: u64 = 0x9E37_79B9_7F4A_7C15;
+        for b in buf.iter_mut() {
+            x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            *b = x;
+        }
+        Self { buf, epochs }
+    }
+
+    #[inline(never)]
+    pub fn run(&self) -> u64 {
+        let buf: &[u64; 1024] = &self.buf;
+        let mut acc: u64 = 0;
+        for _ in 0..self.epochs {
+            for &v in buf.iter() {
+                acc = acc.wrapping_add((v ^ acc).count_ones() as u64);
+            }
+        }
+        acc
+    }
+
+    /// Single timed sample -> (epochs/sec, checksum)
+    pub fn sample_once(&self) -> (f64, u64) {
+        let t = Instant::now();
+        let chk = self.run();
+        let d = t.elapsed();
+        (self.epochs as f64 / d.as_secs_f64(), chk)
+    }
+
+    /// Robust rate: median over `samples`, after `warmup`.
+    pub fn rate(&self, warmup: u32, samples: u32) -> f64 {
+        for _ in 0..warmup {
+            std::hint::black_box(self.run());
+        }
+        let mut r: Vec<f64> = Vec::with_capacity(samples as usize);
+        for _ in 0..samples {
+            let (rate, chk) = self.sample_once();
+            std::hint::black_box(chk);
+            r.push(rate);
+        }
+        r.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        r[r.len() / 2]
+    }
+}
+
+/// DRAM streaming bandwidth probe: 8 MiB > every cache on this SoC.
+pub struct MemCanary {
+    buf: Box<[u64]>,
+    pub epochs: u32,
+}
+
+impl MemCanary {
+    pub fn new() -> Self {
+        let mut x: u64 = 0x2545_F491_4F6C_DD1D;
+        let mut v = Vec::with_capacity(1 << 20);
+        for _ in 0..(1 << 20) {
+            x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            v.push(x);
+        }
+        Self { buf: v.into_boxed_slice(), epochs: 16 }
+    }
+
+    #[inline(never)]
+    pub fn run(&self) -> u64 {
+        let mut acc: u64 = 0;
+        for _ in 0..self.epochs {
+            for &v in self.buf.iter() {
+                acc = acc.wrapping_add(v);
+            }
+        }
+        acc
+    }
+
+    pub fn rate(&self, warmup: u32, samples: u32) -> f64 {
+        for _ in 0..warmup { std::hint::black_box(self.run()); }
+        let mut r: Vec<f64> = Vec::with_capacity(samples as usize);
+        for _ in 0..samples {
+            let t = Instant::now();
+            let chk = self.run();
+            let d = t.elapsed();
+            std::hint::black_box(chk);
+            r.push(self.epochs as f64 / d.as_secs_f64());
+        }
+        r.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        r[r.len() / 2]
+    }
+}
+```
+
+### `crates/titan-bench/src/pin.rs`
+```rust
+//! Thread pinning. Own-thread affinity needs no root on Android.
+//! NOTE: keep Termux in the FOREGROUND (recent apps) — background apps get
+//! restricted cpusets and pinning can fail.
+use std::io;
+
+fn set_mask(mask: [u64; 16]) -> io::Result<()> {
+    let rc = unsafe {
+        libc::sched_setaffinity(
+            0, // calling thread
+            std::mem::size_of_val(&mask),
+            &mask as *const [u64; 16] as *const libc::c_void,
+        )
+    };
+    if rc == 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
+}
+
+pub fn set_affinity(cpu: usize) -> io::Result<()> {
+    let mut mask = [0u64; 16];
+    mask[cpu / 64] |= 1u64 << (cpu % 64);
+    set_mask(mask)
+}
+
+/// Restore full mask — REQUIRED before spawning threads, since children
+/// inherit the creator's mask (and would all land on one core).
+pub fn set_full_affinity() -> io::Result<()> {
+    set_mask([u64::MAX; 16])
+}
+
+pub fn ncpus() -> usize {
+    unsafe { libc::sysconf(libc::_SC_NPROCESSORS_ONLN) as usize }
+}
+```
+
+### `crates/titan-bench/src/topology.rs`
+```rust
+#[derive(Clone, Debug)]
+pub struct Core {
+    pub cpu: usize,
+    pub part: Option<u32>,        // ARM "CPU part" hardware id
+    pub implementer: Option<u32>,
+}
+
+pub fn part_name(part: u32) -> String {
+    match part {
+        0xd05 => "A55".into(),
+        0xd0a => "A75".into(),
+        0xd0e => "A76".into(),
+        0xd0c => "Neoverse-N1".into(),
+        _ => format!("part-{part:#x}"),
+    }
+}
+
+fn field(line: &str, key: &str) -> Option<String> {
+    let rest = line.strip_prefix(key)?;
+    let rest = rest.trim_start();
+    let val = rest.strip_prefix(':')?;
+    Some(val.trim().to_string())
+}
+
+/// Parse /proc/cpuinfo. Corroborated later by measured canary rates —
+/// performance is ground truth, labels are hints.
+pub fn read() -> Vec<Core> {
+    let txt = std::fs::read_to_string("/proc/cpuinfo").unwrap_or_default();
+    let mut cores: Vec<Core> = Vec::new();
+    let mut cur: Option<Core> = None;
+    for line in txt.lines() {
+        let line = line.trim();
+        if let Some(v) = field(line, "processor") {
+            if let Some(c) = cur.take() { cores.push(c); }
+            if let Ok(id) = v.parse::<usize>() {
+                cur = Some(Core { cpu: id, part: None, implementer: None });
+            }
+        } else if let Some(c) = cur.as_mut() {
+            if let Some(v) = field(line, "CPU part") {
+                c.part = u32::from_str_radix(v.trim_start_matches("0x"), 16).ok();
+            } else if let Some(v) = field(line, "CPU implementer") {
+                c.implementer = u32::from_str_radix(v.trim_start_matches("0x"), 16).ok();
+            }
+        }
+    }
+    if let Some(c) = cur { cores.push(c); }
+    cores
+}
+
+/// Best-effort frequency reads (often root-gated on production Android).
+pub fn read_cur_freq(cpu: usize) -> Option<u64> {
+    std::fs::read_to_string(format!(
+        "/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_cur_freq"))
+        .ok()?
+        .trim().parse::<u64>().ok()
+}
+
+pub fn read_max_freq(cpu: usize) -> Option<u64> {
+    std::fs::read_to_string(format!(
+        "/sys/devices/system/cpu/cpu{cpu}/cpufreq/cpuinfo_max_freq"))
+        .ok()?
+        .trim().parse::<u64>().ok()
+}
+```
+
+### `crates/titan-bench/src/snapshot.rs`
+```rust
+//! Environment snapshot, hygiene gate, wake-lock guard, record writer.
+use crate::topology;
+use std::process::Command;
+
+pub struct Battery { pub pct: Option<i64>, pub status: String }
+
+pub struct Env {
+    pub epoch_secs: u64,
+    pub kernel: String,
+    pub load1: Option<f64>,
+    pub loadavg_raw: String,
+    pub mem_total_kb: Option<u64>,
+    pub mem_avail_kb: Option<u64>,
+    pub battery: Option<Battery>,
+    pub cores: Vec<topology::Core>,
+    pub rustc: String,
+}
+
+fn read_first(path: &str) -> Option<String> {
+    std::fs::read_to_string(path).ok().and_then(|s| s.lines().next().map(String::from))
+}
+
+pub fn battery() -> Option<Battery> {
+    let out = Command::new("termux-battery-status").output().ok()?;
+    let s = String::from_utf8_lossy(&out.stdout).to_string();
+    let pct = s.find("\"percentage\"")
+        .and_then(|i| s[i..].split(':').nth(1))
+        .and_then(|r| r.split(',').next())
+        .and_then(|r| r.trim().parse::<i64>().ok());
+    let status = s.find("\"status\"")
+        .and_then(|i| s[i..].split(':').nth(1))
+        .and_then(|r| r.split(',').next())
+        .map(|x| x.trim().trim_matches('"').to_string())
+        .unwrap_or_else(|| "unknown".into());
+    Some(Battery { pct, status })
+}
+
+pub fn snapshot() -> Env {
+    let loadavg_raw = read_first("/proc/loadavg").unwrap_or_default();
+    let load1 = loadavg_raw.split_whitespace().next()
+        .and_then(|t| t.parse::<f64>().ok());
+    let mem = |key: &str| read_first("/proc/meminfo").and_then(|l| {
+        l.starts_with(key).then(|| l[key.len()..].trim().trim_end_matches("kB").trim().parse().ok()).flatten()
+    });
+    Env {
+        epoch_secs: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+        kernel: read_first("/proc/version").unwrap_or_default(),
+        load1, loadavg_raw,
+        mem_total_kb: mem("MemTotal:"),
+        mem_avail_kb: mem("MemAvailable:"),
+        battery: battery(),
+        cores: topology::read(),
+        rustc: Command::new("rustc").arg("--version").output().ok()
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+            .unwrap_or_else(|| "unknown".into()),
+    }
+}
+
+/// Hygiene gate. Returns (abort_reasons, warnings).
+pub fn hygiene() -> (Vec<String>, Vec<String>) {
+    let mut aborts = Vec::new();
+    let mut warns = Vec::new();
+    let env = snapshot();
+    if let Some(l) = env.load1 {
+        if l >= 4.0 { aborts.push(format!("loadavg {l} — system busy")); }
+        else if l >= 2.0 { warns.push(format!("loadavg {l}")); }
+    }
+    match &env.battery {
+        Some(b) => {
+            if let Some(p) = b.pct {
+                if p < 50 { aborts.push(format!("battery {p}% < 50")); }
+            }
+            if b.status.contains("CHARG") {
+                aborts.push("charging — thermal state invalid".into());
+            }
+        }
+        None => warns.push("battery unknown (Termux:API not installed?)".into()),
+    }
+    if env.mem_avail_kb.map_or(false, |m| m < 512 * 1024) {
+        aborts.push("MemAvailable < 512 MB".into());
+    }
+    (aborts, warns)
+}
+
+pub struct WakeLock;
+impl WakeLock {
+    pub fn acquire() -> WakeLock {
+        let _ = Command::new("termux-wake-lock").status();
+        WakeLock
+    }
+}
+impl Drop for WakeLock {
+    fn drop(&mut self) { let _ = Command::new("termux-wake-unlock").status(); }
+}
+
+pub fn json_esc(s: &str) -> String {
+    let mut o = String::with_capacity(s.len() + 2);
+    for c in s.chars() {
+        match c {
+            '"' => o.push_str("\\\""),
+            '\\' => o.push_str("\\\\"),
+            '\n' => o.push_str("\\n"), '\r' => o.push_str("\\r"), '\t' => o.push_str("\\t"),
+            c if (c as u32) < 0x20 => o.push_str(&format!("\\u{:04x}", c as u32)),
+            c => o.push(c),
+        }
+    }
+    o
+}
+
+/// Record discipline: results that aren't recorded didn't happen.
+pub fn write_record(tag: &str, json: &str) -> std::io::Result<String> {
+    let dir = "bench/records";
+    std::fs::create_dir_all(dir)?;
+    let path = format!("{dir}/{tag}_{}.json",
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis()).unwrap_or(0));
+    std::fs::write(&path, json)?;
+    Ok(path)
+}
+```
+
+### `crates/titan-bench/src/proxy.rs`
+```rust
+//! Instrumentation-only scalar odd segmented sieve.
+//! Deliberately naive: a MEASURING STICK for per-core throughput.
+//! NOT titan-sieve. Superseded by real engine measurements in Phase 2+.
+//! (f64 sqrt is safe here because the correction loops make it exact.)
+
+pub fn isqrt_corr(n: u64) -> u64 {
+    if n < 2 { return n; }
+    let mut r = (n as f64).sqrt() as u64;
+    while r > 0 && r * r > n { r -= 1; }
+    while (r + 1) * (r + 1) <= n { r += 1; }
+    r
+}
+
+pub fn pi_proxy(limit: u64) -> u64 {
+    if limit < 2 { return 0; }
+    let mut count: u64 = 1; // prime 2
+    let r = isqrt_corr(limit);
+
+    // base odd primes ≤ √limit
+    let half = (r >> 1) as usize + 1; // index i <-> odd 2i+1
+    let mut comp = vec![false; half];
+    if r >= 3 {
+        let mut i = 1usize;
+        while 2 * i + 1 <= r as usize {
+            if !comp[i] {
+                let p = 2 * i + 1;
+                let mut j = (p * p - 1) / 2;
+                while j < half { comp[j] = true; j += p; }
+            }
+            i += 1;
+        }
+    }
+    let base: Vec<u64> = (1..half).filter(|&i| !comp[i])
+        .map(|i| (2 * i + 1) as u64).collect();
+
+    const SEG_ODDS: u64 = 32768; // 64 Ki number span
+    let mut low: u64 = 3;
+    while low <= limit {
+        let high = (low + 2 * SEG_ODDS - 2).min(limit);
+        let n = (((high - low) >> 1) + 1) as usize;
+        let mut seg = vec![false; n];
+        for &p in &base {
+            let pp = p * p;
+            if pp > high { break; }
+            let mut m = if pp >= low { pp } else {
+                let rem = low % p;
+                let mut mm = if rem == 0 { low } else { low + (p - rem) };
+                if mm % 2 == 0 { mm += p; }
+                mm
+            };
+            while m <= high {
+                seg[((m - low) >> 1) as usize] = true;
+                m += 2 * p;
+            }
+        }
+        count += seg.iter().filter(|&&c| !c).count() as u64;
+        low = high + 2;
+    }
+    count
+}
+```
+
+### `crates/titan-bench/src/bin/survey.rs`
+```rust
+//! Per-core solo survey, all-core contention pass, thermal heatsoak.
+//! Usage:
+//!   survey [--baseline] [--samples N] [--proxy-limit N] [--heatsoak SECS]
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{mpsc, Arc, Barrier, Mutex};
+use std::time::{Duration, Instant};
+use titan_bench::{canary, pin, proxy, snapshot, topology};
+
+struct CoreResult {
+    cpu: usize, part: Option<u32>, cluster: &'static str,
+    canary: f64, mem: f64, proxy_rate: f64, allcore_rate: f64,
+}
+
+fn median3_proxy(limit: u64) -> f64 {
+    let mut ts = Vec::new();
+    for _ in 0..3 {
+        let t = Instant::now();
+        let c = proxy::pi_proxy(limit);
+        ts.push(t.elapsed());
+        std::hint::black_box(c);
+    }
+    ts.sort();
+    limit as f64 / ts[1].as_secs_f64()
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let has = |f: &str| args.iter().any(|a| a == f);
+    let val = |f: &str, d: &str| args.iter().position(|a| a == f)
+        .and_then(|i| args.get(i + 1)).cloned().unwrap_or_else(|| d.to_string())
+        .parse().expect("bad flag value");
+    let do_baseline = has("--baseline");
+    let heatsoak_secs: Option<u64> = if has("--heatsoak") { Some(val("--heatsoak", "90")) } else { None };
+    let samples: u32 = val("--samples", "25");
+    let limit: u64 = val("--proxy-limit", "100000000");
+
+    let _wl = snapshot::WakeLock::acquire();
+    let (aborts, warns) = snapshot::hygiene();
+    for w in warns { eprintln!("[hygiene warn] {w}"); }
+    if !aborts.is_empty() {
+        eprintln!("[hygiene ABORT] {:?}", aborts);
+        return;
+    }
+
+    let cores = topology::read();
+    let n = cores.len().max(1);
+    println!("== TITAN-PHASE0 SURVEY == cores: {n}");
+    for c in &cores {
+        let name = c.part.map(|p| topology::part_name(p)).unwrap_or_else(|| "?".into());
+        println!("  cpu{} : {name} (max_freq: {:?} kHz)",
+            c.cpu, topology::read_max_freq(c.cpu));
+    }
+
+    // ---- solo pass ----
+    let mut solo: Vec<CoreResult> = Vec::new();
+    let can = canary::CpuCanary::with_epochs(canary::CANARY_M);
+    let mem = canary::MemCanary::new();
+    for c in &cores {
+        if let Err(e) = pin::set_affinity(c.cpu) {
+            eprintln!("cpu{} pin failed: {e} (foreground Termux? skipping)", c.cpu);
+            continue;
+        }
+        let cr = can.rate(3, samples);
+        let mr = mem.rate(2, 11);
+        let pr = median3_proxy(limit);
+        solo.push(CoreResult {
+            cpu: c.cpu, part: c.part, cluster: "big", // assigned below
+            canary: cr, mem: mr, proxy_rate: pr, allcore_rate: 0.0,
+        });
+    }
+
+    // ---- cluster assignment by MEASURED canary rate ----
+    {
+        let mut ranked: Vec<(usize, f64)> =
+            solo.iter().map(|r| (r.cpu, r.canary)).collect();
+        ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        let mut best_gap = 1.0f64;
+        let mut split = 0usize;
+    # Phase 0 Engineering Specification — The Instruments (Post-`proxy.rs`)
+
+No code from here on. Contracts, reasoning, algorithms, invariants, expected values. You translate.
+
+---
+
+## PART 4 — THE SURVEY INSTRUMENT
+
+### 4.1 The Measurement Problem, Decomposed
+
+A phone SoC is a *hostile* measurement environment. On a desktop, wall-clock ≈ work. On the Helio G100, one wall-clock number conflates five distinct effects:
+
+1. **Intrinsic core capability** (A76 vs A55 microarchitecture)
+2. **DVFS frequency state** at execution time (varies second-to-second)
+3. **Thermal derate** (frequency caps as silicon heats)
+4. **Cycle theft** (Android daemons, IRQs, other tasks)
+5. **Contention** (shared L2 on the little cluster, shared LPDDR controller, shared power budget)
+
+The survey's job is to **separate these five factors** so later phases can reason about each one. Every design decision below exists to isolate one factor from the others. If a measurement can't tell you *which* factor moved, it's not an instrument, it's a stopwatch.
+
+### 4.2 The Solo Pass — Why Three Probes Per Core
+
+Run each probe pinned to each core, one core at a time, everything else idle:
+
+| Probe | Working set | What it isolates | What it deliberately does NOT touch |
+|---|---|---|---|
+| **CPU canary** | 8 KiB (L1-resident on both A55-32K and A76-64K) | Effective core frequency × intrinsic IPC | Memory system, caches beyond L1 |
+| **Memory canary** | 8 MiB (exceeds all caches on the SoC) | LPDDR streaming bandwidth | Core compute |
+| **Proxy sieve** | ~64 KiB segments + base primes | The *real* microarchitectural mix of sieve work: division cost, branch behavior, memory access pattern | Nothing — it's the honest workload |
+
+**Why the canary must be a serial dependency chain.** The chain is: `acc ← acc + popcount(v XOR acc)` over a fixed 1024-word buffer, repeated E epochs. Each iteration *depends on the previous accumulator*. This is the critical trick: the A76 is an 8-wide out-of-order machine. Give it independent work and it will compensate for a frequency drop with instruction-level parallelism — the canary would read constant while the core slows. A serial chain gives the OoO engine nothing to overlap, so **the rate becomes proportional to effective clock frequency alone**. The canary is a frequency thermometer, and the dependency chain is what makes it one.
+
+**Why fixed epoch count, not fixed duration.** With fixed work, *duration itself is the signal* (longer = slower). With fixed duration, you'd count iterations — a loop counter in the hot path adds instructions and (worse) the compiler may restructure it. Fixed work is the cleaner instrument.
+
+**Why the buffer is pre-generated with a fixed LCG.** Identical data every invocation. Identical instruction stream + identical data = the *only* variable across invocations is the machine state. That's the definition of a probe.
+
+**Why ~5–15 ms per sample.** Below 1 ms, timer quantization and scheduler-tick interference dominate. Above 50 ms, you average over frequency transitions you'd want to see. 5000 epochs × 1024 words ≈ 8–12 ms at 2 GHz — inside the window.
+
+**Why median-of-N with MAD, never mean.** Android background jitter produces outliers (a daemon waking, an IRQ storm). Median is immune to bounded outliers. **The MAD is an environment-stability gauge, not a statistic:** if MAD exceeds ~5% of median, the session itself is unstable and *every* benchmark from that session is suspect. Report MAD; treat large MAD as "rerun later", not as noise to average away.
+
+**Why checksum → black_box.** Without consuming the accumulator, LLVM dead-code-eliminates the entire chain and the canary measures nothing at 0 ns/sample. This is the most common way a benchmark lies.
+
+**Why the memory canary probe matters even though it's not the bottleneck yet.** Big:little CPU canary ratio will be ~4×. Big:little *memory* canary ratio will be ~1.0–1.3× (the DRAM controller is off-core and shared). That asymmetry is a design input for Phase 2/3: workloads that are memory-phase-bound (the popcnt counting sweep) barely benefit from big cores; marking phases (compute + division) benefit enormously. When you later partition work, you'll know *which phase* to weight by which probe.
+
+**Why a proxy sieve at all, when we have a canary.** Because the canary's instruction mix (XOR/popcount/add) is *not* the sieve's mix (division, modulo, conditional stores, strided writes). The A55 is in-order and narrow — division and branches punish it far harder than a popcount chain does. Expect big:little **canary** ratio ~3.5–4.5× but big:little **proxy** ratio ~4.5–6×. **The proxy ratio — not the canary ratio — becomes the Phase 3 partition weight.** Canary answers "how hot is this core"; proxy answers "how much sieve work can this core do". Different instruments, different consumers.
+
+**Why 3 repetitions, median, for the proxy.** First repetition pays page faults and cold caches. Median of 3 kills that. 10⁸ per rep at ~0.4 B/s on an A55 ≈ 0.25 s — cheap enough.
+
+### 4.3 Cluster Inference — Labels Are Hints, Rates Are Truth
+
+`/proc/cpuinfo` says "CPU part: 0xd0e" (A76) and "0xd05" (A55). Do not trust this as the primary signal. Some vendor kernels mask fields; some devices have odd cluster configs; and "cluster" gets ambiguous when max frequencies differ within a group.
+
+**Algorithm (parameter-free 1-D clustering by maximum gap):**
+
+1. Rank all surveyed cores by canary rate, descending.
+2. Walk adjacent pairs; compute ratio `ranked[i-1] / ranked[i]`.
+3. The largest ratio gap is the cluster boundary. Split there → "big" above, "little" below.
+4. If the best gap is below 1.5×, declare the device homogeneous ("uni") — no split is justified.
+
+Sanity cross-check: the measured split should agree with cpuinfo labels. If it *disagrees*, performance wins — the ledger records both, and the disagreement itself is a finding worth investigating (usually a restricted cpuset or a core running capped).
+
+### 4.4 The All-Core Contention Pass
+
+**Purpose:** measure the contention factor — aggregate throughput with all cores loaded simultaneously ÷ sum of solo throughputs. This will *not* be 1.0. Ever. The causes: 6 A55s share one L2; everyone shares the LPDDR controller; all-core load drops achievable frequencies (shared power/thermal budget); EAS migrates nothing here (we pinned) but the memory fabric is a commons.
+
+**Design requirements:**
+
+- **Pin every worker *before* a barrier, measure after the barrier releases.** If threads start unpinned, the scheduler places them and migrates them mid-measurement — per-core attribution corrupts. The barrier guarantees simultaneous start (otherwise the first thread runs alone at solo speed and skews its own number).
+- **Same proxy work as the solo pass**, 3 reps, median — identical work means solo-vs-allcore is an apples-to-apples ratio.
+- **Thread exit on pin failure is a reported hole, not a crash.** If a core can't be pinned (Termux backgrounded → restricted cpuset → `sched_setaffinity` fails), the survey must *say so* and mark the all-core aggregate as partial. Silent holes make the efficiency number a lie.
+
+**Interpretation:** expect efficiency 0.55–0.75. Per-core breakdown matters more than the aggregate: typically big cores retain ~85–95% of solo rate (private L2), little cores drop to ~60–75% (shared L2 + DRAM contention). **These per-core allcore/solo ratios are the real Phase 3 weights** — partitioning by solo rates overestimates little-core capacity by exactly the contention factor.
+
+**The affinity restoration invariant:** after the solo pass, the main thread is still pinned to the last core it measured. Every spawned worker *inherits that mask*. Restore the full mask before spawning, or all your workers land on one core and the "all-core" pass measures one core eight times. This trap appears twice in Phase 0 (here, and in benchref's subprocess spawn) and it produces *plausible-looking garbage*, which is worse than crashes.
+
+### 4.5 The Heatsoak — Thermal Characterization
+
+**Purpose:** the derate curve `derate(t) = canary_rate(t) / canary_rate(cool)` under sustained all-core load, plus the loaded-cores' own throughput droop. This is the instrument that will explain reference.md's 38% burst→sustained collapse.
+
+**Design decisions and their reasons:**
+
+1. **The canary core must be unloaded and must be a big core.** It samples the thermal state of the *big cluster* — where the engine's dominant workers will live. Choice: second-fastest big core runs the canary; the fastest big core stays loaded as a worker; all little cores load. Sacrificing one big worker buys the thermal signal for the cluster that matters. (A little-core canary would measure the little cluster's power state — a different, less critical curve.)
+2. **The cool baseline is measured at the *start*, from a cool device.** Trap: the full survey loads the SoC for minutes before heatsoak begins — if you bolt heatsoak onto the end of a survey, the "cool baseline" is already warm and you underestimate droop by starting the curve at ~0.9. Therefore: **heatsoak runs as a separate invocation** (`--heatsoak-only`) after ≥5 min idle, with only a ~1 s canary-only prelude to identify cores. Thermal curves must start cold, full stop.
+3. **Sampling cadence 250 ms.** The canary sample takes ~10 ms; the 240 ms sleep keeps the canary core idle (and thus able to boost to its current permitted max during its own sample). Consistency matters more than absolute accuracy here: the baseline is measured under the *same* cadence pattern, so the ratio is meaningful. ~4 Hz resolution on a curve that evolves over 30–90 s is ample.
+4. **Corroborate with `scaling_cur_freq` when readable.** Two signals, one diagnosis: freq and derate falling together = frequency throttling (the normal case); derate falling with freq constant = something else (memory-fabric contention, thermal cap on the interconnect) — investigate; both flat = device didn't throttle in 90 s, *valid*, rerun 180 s only if freq is *also* unreadable.
+5. **The loaded workers record completion timestamps, not just final counts.** Per-worker series `(t, cumulative runs)` → per-cluster rate in the first 30% of the soak vs the last 30%. This gives the **loaded-core droop**, which is *deeper than the canary droop* — loaded cores suffer thermal derate *plus* the contention of everyone else's live working sets. The engine's sustained throughput budget comes from *this* number, not the canary's.
+6. **End state:** min derate, end derate, count of samples below 0.90. The sustained multiplier for the ledger is the *end* derate (the number a 90 s engine benchmark actually runs at).
+
+**Expected shapes:** big cluster droops smoothly to a 0.65–0.85 plateau; little cluster stays ~0.9+ (they're efficient, and the thermal budget is dominated by big-cluster power); possible cliff if MediaTek's thermal daemon enforces a hard frequency cap. Any of these is a valid result — the *instrument's* job is to tell you which one your silicon does.
+
+### 4.6 Baseline Persistence
+
+The cool-state canary baseline per core is persisted to `bench/baselines.json`, keyed by **rustc version**. Why keyed by compiler version: the canary's own codegen can change between compiler releases, shifting the rate scale — a baseline measured under rustc 1.80 must not be divided against canary rates from rustc 1.85. Rule: re-baseline after any toolchain update. This file is what benchref (Part 5) loads to normalize external benchmarks, and what every future engine benchmark loads to answer "was the device cool when we measured?".
+
+---
+
+## PART 5 — BENCHREF: BENCHMARKING EXTERNAL BINARIES HONESTLY
+
+### 5.1 The Comparability Problem
+
+When titan-sieve exists and we claim "we beat primesieve", that claim compares numbers measured in different sessions, possibly hours apart, at different thermal states. Benchref exists to make such comparisons legitimate. Its design principle: **a benchmark is only comparable to another if both are (a) verified for output correctness, (b) normalized to a common thermal reference, (c) recorded with the environment that produced them.**
+
+### 5.2 The Canary Sandwich
+
+For each run of the external binary:
+
+```
+canary sample → [ spawn child, wait, time it, capture output ] → canary sample
+```
+
+- The **after/base ratio brackets the child's execution**. We cannot measure the child's frequency directly; we bracket it. Derate ≈ 1.0 on both sides → the child ran cool → its wall time is directly comparable to a cool titan run. After-sample below base → the child heated the SoC → its time carries a thermal penalty.
+- **Normalization math:** `normalized = raw_rate / mean_derate`. Division, not multiplication: if the SoC ran at 80% clock, the child did its work with a 0.8× clock — cool-clock-equivalent asks "how fast would this have been at full clock", which is `raw / 0.8`. Multiplying would double-punish throttled runs. This is the same logic as normalizing race times by altitude.
+- **Honest limitation, documented:** the canary measures one big core. The child is multithreaded across heterogeneous cores; little cores derate differently. The normalization removes the dominant confound (big-cluster thermal state) but is approximate — call the output "cool-clock-equivalent under the big-core canary model" in the ledger, not "true throughput". Approximate and labeled beats raw and lying.
+
+### 5.3 The Affinity Inheritance Trap (Design Invariant, Non-Negotiable)
+
+Benchref pins its canary to a big core for stable sampling. **Child processes inherit the parent's affinity mask.** If benchref stays pinned while spawning `primecount --threads=8`, primecount runs locked to a *single core* regardless of its thread count. The result: plausible numbers, ~8× too slow, silently poisoning every baseline in the ledger. This is the single most dangerous defect available in this design.
+
+**The protocol:** unpin (restore full mask) immediately before `spawn`, re-pin to the big core immediately after `wait` for the closing canary sample. Every spawn site in the entire project must be audited against this rule — it will recur in titan-cli and the oracle's subprocess tier.
+
+### 5.4 Two Modes That Answer Different Questions
+
+| Mode | Behavior | Answers |
+|---|---|---|
+| `--runs K` | K repetitions, report per-run + median | **Burst capability** — matches reference.md's short single measurements |
+| `--duration S` | Repeat until S seconds elapse | **Sustained floor** — includes thermal drift across runs, matches the 90 s methodology; this is the number the engine must beat |
+
+The ledger records both for every external reference. "Beat primesieve" is underspecified until you say burst or sustained — they differ by the entire thermal story (~38% on this device, per your own reference.md).
+
+### 5.5 Canary Sizing
+
+Small (~1–2 ms), medium (~8–12 ms), large (~80 ms) canary variants. Small for fast children (don't let the thermometer dominate the measurement); large for long children (better frequency resolution, and its own heating is still negligible). `--canary s|m|l`. Default medium.
+
+### 5.6 Verification and Records
+
+- **`--expect N`**: parse the child's stdout, first integer token, must equal N. A benchmark whose output isn't verified is a stopwatch, not a benchmark. Reference.md supplies the constants (π(10¹⁰) = 455,052,511, etc.).
+- Parse rule: first whitespace-separated token *beginning with a digit*, take leading digit run. primecount prints just the count; primesieve with count mode prints it too. Verify against `--help` of the actual installed versions — flag names drift between releases (`--sieve-size`, `--threads`, `--algorithm` spellings must be confirmed on-device before trusting the sweep).
+- **Hygiene gate:** same as survey (battery ≥ 50% and not CHARGING/FULL; loadavg < 4; MemAvailable ≥ 512 MB). `--force` overrides for debugging, but any forced run is *marked* in its record — invalid runs are forensically flagged, never deleted, so they can't be confused with valid ones later.
+- **Every run writes a JSON record**: command, work size, runs, per-run wall/output/derate, raw + normalized rate, environment snapshot, epoch, rustc. **The ledger is law: unrecorded numbers didn't happen.**
+
+### 5.7 Rate Computation Detail
+
+Time *around the child only* — `Instant::now()` immediately before spawn, elapsed immediately after wait. The canary samples, output parsing, and printing are excluded from the timed region. `raw = work × runs / Σ(child wall)`. Any looser timing region silently inflates every rate and invalidates cross-session comparison.
+
+---
+
+## PART 6 — THE ORACLE: EPISTEMOLOGY OF "CORRECT"
+
+### 6.1 The Truth Triangle
+
+The oracle judges future engines. What judges the judge? Three *independent* truth sources, pairwise interlocked:
+
+```
+        Literature (OEIS A006880)
+           /                    \
+  hand-transcribed          computed by a decades-
+  constants, zero code     validated SOTA engine
+         /                      \
+  Trial division ──── interlocked at 10^6, 10^7 ──── primecount binary
+  (auditable by reading it)
+```
+
+- **Trial division** is algorithmically trivial — its correctness is *auditable by inspection*, which no fast algorithm can claim. Cost: O(n·√n) — certifies only up to 10⁷ in sane time.
+- **Literature constants** share no code with us or with Walisch. Risk: transcription error — which is why they're cross-checked against primecount at scales trial can't reach (10¹², 10¹⁴, 10¹⁶, 10¹⁷).
+- **Reference binaries** are presumably-correct third-party code. Risk: not installed, wrong version — handled as *soft* tier (skip + warn; fatal only under `--strict-bins`), so the core oracle gate runs in any environment.
+
+If all three agree at every overlap point, a wrong oracle verdict requires three *independent simultaneous* errors. Single-source oracles bless wrong engines; the triangle is the immune system.
+
+### 6.2 Tier Design — Why Tiers Exist At All
+
+The scaling wall: the honest-but-slow reference can only check small x, but engine defects live at all scales. The tiers shift the *source of expected values* as x grows:
+
+| Tier | x values | Expected values from | Bug classes caught |
+|---|---|---|---|
+| **T1-small** | exhaustive 0..=2000 | incremental running count (computed *without ever calling the candidate*) | off-by-ones, seed handling, wheel residue errors — local defects |
+| **T1-boundary** | {p−1, p, p+1} for primes near 10⁴, 10⁵, 10⁶ | trial division | domain off-by-one (≤/< confusion): π(p−1) and π(p) differ by *exactly one* |
+| **T2-mid** | 10⁴, 10⁵, 10⁶, 999,999, 1,000,001, 65,536, 1,048,576, π-milestones | trial division | segment-boundary alignment (powers of two = segment sizes — an engine with segment bugs fails *exactly here*), domain edges |
+| **T3-constants** | 10⁶, and 10⁷ in full mode | **literature only** | scale fraud — anything whose defect begins above the reach of honest code |
+
+Two invariants here:
+
+1. **Expected values are never computed by calling the candidate.** Ever. This sounds obvious; it's the classic oracle self-reference bug.
+2. **T3's existence is the entire lesson of seive.md**: an implementation can be perfect at every scale you can exhaustively check and still lie at 10⁷ and beyond. The tier boundary *is* where honest verification ends and trust-in-literature begins — the oracle must know where that wall is.
+
+### 6.3 The Mutant Corpus — The Oracle's Self-Test
+
+The deepest rule in Phase 0: **a test suite that always passes proves nothing — it may simply have no discriminating power.** So we inject known-bad implementations and *require the oracle to catch every one*. The oracle's power is measured in kills, and each mutant maps to a bug class we could plausibly commit:
+
+| Mutant | Defect | First caught at | Tier that catches it | Real-world bug it models |
+|---|---|---|---|---|
+| **M1** sqrt boundary | `d·d < n` instead of `≤` | x = 25 | T1-small | prime squares (25, 49, 121…) counted prime — loop-boundary defects 
+## 6.4 Exit-Code Contract
+
+| Exit | Meaning | Consequence |
+|---|---|---|
+| 0 | Gate pass: reference bit-exact, all mutants caught | Phase 0 proceed |
+| 1 | The oracle's *own honest reference* failed cases | The ground truth itself is broken — catastrophic, stop everything |
+| 2 | A mutant escaped | Oracle insufficient — add cases/tiers before trusting any engine verdict |
+| 3 | Truth interlock failure (trial ⟷ A006880 ⟷ primecount disagree) | Constants transcription error or corrupted binary — catastrophic |
+
+Distinct codes so automation (and you, at 2 AM) can distinguish "engine wrong" from "oracle broken" from "truth broken". Three different emergencies with three different fixes.
+
+## 6.5 The Isolation Rule
+
+The oracle crate takes **zero dependencies and shares zero code with anything it will ever judge** — including utility crates. Rationale: if the oracle imported a utility that titan-sieve also uses, one bug in that utility corrupts the engine *and* the judge simultaneously — the mutant passes. Independence is expensive (a little duplication) and worth it. This rule is permanent for the project's lifetime: titan-oracle never grows an import that any engine crate also grows.
+
+## 6.6 Cost Accounting (Why Full Mode Takes ~1–2 min)
+
+Trial π(10⁷) is the dominant cost (~10⁷ candidates × ~√n/2 divisions each... in practice tens of seconds on an A76). That's the price of an *auditable-by-reading* reference at the highest scale it can reach. Everything above 10⁷ is literature + primecount. Know your verification budget: full gate ≈ 1–2 min, quick gate ≈ 2–4 s (interlock at 10⁶, one bincheck at 10¹², no trial-10⁷, no M4).
+
+---
+
+## PART 7 — PROTOCOL, GATE, AND CALIBRATION
+
+### 7.1 Run Protocol (Order Is Load-Bearing)
+
+```
+1. SURVEY          (cool, ≥5 min idle, foreground, unplugged, ≥50% battery)
+                   → solo pass + contention pass + baseline persistence
+2. HEATSOAK-ONLY   (separate invocation, ≥5 min idle again)
+                   → cool-start thermal curve, 90 s
+3. ORACLE quick    → 3 s sanity during development
+4. ORACLE full     → THE GATE
+5. BENCHREF gap fills     → primecount 10^10, 10^11 (the missing ledger rows)
+6. BENCHREF sustained     → 90 s duration runs: primecount 10^14, primesieve 10^11
+7. BENCHREF knob sweep   → primesieve sieve-size sweep, best-of
+8. BENCHREF algorithm ladder → primecount --algorithm=lehmer|lmo|gourdon at 10^14
+```
+
+Steps 1 and 2 are separate invocations *by design* (the cool-baseline trap, §4.5). Steps 5–8 fill the ledger with canary-normalized, output-verified numbers. Verify actual flag spellings against `primecount --help` / `primesieve --help` *before* the sweep — flag names drift between releases; a mistyped flag that silently falls back to defaults poisons the sweep quietly. If `--expect` isn't supplied for a sweep run, at minimum eyeball the parsed output against the constants table.
+
+### 7.2 The Gate (all green before Phase 1)
+
+| # | Criterion | Evidence |
+|---|---|---|
+| 1 | ≥2 clusters detected via max-gap inference; agrees with cpuinfo labels | survey stdout |
+| 2 | big:little **canary** ratio recorded (expect ≥ 3×) | survey record |
+| 3 | big:little **proxy** ratio recorded (expect > canary ratio) → Phase 3 weights | survey record |
+| 4 | All-core efficiency per core (expect 0.55–0.75 aggregate) → real partition weights | survey record |
+| 5 | Heatsoak: coherent derate curve, end+min derate, loaded-vs-canary droop split | heatsoak record |
+| 6 | Oracle full mode **exit 0**; 5/5 mutants caught | oracle record |
+| 7 | M4 caught **by T3-constants specifically** — proves the literature tier discriminates | oracle stdout |
+| 8 | Truth triangle interlocked at all overlap points | oracle stdout |
+| 9 | Ledger gaps filled + best-config sweep + algorithm ladder, all derate-normalized | bench/records/*.json |
+| 10 | reference.md amended to v2; every claim in it now has a record behind it | docs |
+
+### 7.3 Predictions to Calibrate Against
+
+These are what a healthy Helio G100 should show. Numbers wildly off these → instrument bug first, silicon surprise second:
+
+| Quantity | Expected |
+|---|---|
+| big:little canary | 3.5–4.5× |
+| big:little proxy | 4.5–6× (division punishes in-order A55) |
+| big:little memory canary | 1.0–1.3× (shared DRAM — the asymmetry *is* the data) |
+| All-core efficiency | 0.55–0.75 |
+| Heatsoak big-cluster end derate | 0.65–0.85 |
+| Heatsoak little-cluster derate | ≥ 0.85 |
+| Loaded-core droop vs canary droop | loaded is deeper (thermal + contention) |
+| primecount π(10¹²) single run, cool | ~70–90 ms (your reference.md: 77 ms) |
+
+### 7.4 Anomaly Catalog (What Each Weird Reading Means)
+
+| Observation | Diagnosis | Action |
+|---|---|---|
+| Pin to big cores fails | Termux backgrounded → restricted cpuset | Foreground Termux, rerun |
+| Canary MAD > 5% of median | Unstable environment (daemons/thermals) | Discard session, rerun later |
+| All-core efficiency < 0.5 | Severe L2/DRAM contention | Suspect little-cluster saturation; consider cluster-isolated benchmarking |
+| Heatsoak flat 1.0, freq readable+stable | Device genuinely didn't throttle in 90 s | Valid; optionally 180 s |
+| Heatsoak flat 1.0, freq unreadable | Canary insensitive or too short | Rerun 180 s; if still flat, accept |
+| Derate drops, freq constant | Not frequency throttling — fabric/interconnect cap | Investigate (rare, interesting) |
+| Cliff in derate curve | Thermal daemon hard frequency cap | Record the cliff timestamp — it's the engine's thermal deadline |
+| primecount mismatch at some 10^k | Constants transcription error OR wrong binary version | Diff constants against OEIS; check `primecount --version` |
+| Mem canary ≈ CPU canary ratio per core | Instrument bug (canary vectorized or memory-resident) | Check black_box, check serial chain compiled as intended |
+
+### 7.5 Retro-Patch: Invariants You Must Apply to Your Copied `snapshot.rs`
+
+You already copied the pre-proxy files, and my re-audit found two defects in `snapshot.rs`. Fix them in your copy — these are design invariants, not code details:
+
+1. **Battery status matching must be exact-match, never substring.** `"DISCHARGING".contains("CHARG")` is *true* — a substring check inverts the entire gate and aborts every valid unplugged run. Match exactly `CHARGING` and `FULL` (both mean "on charger, thermally invalid"); treat `NOT_CHARGING` as a warning (plugged but not drawing); everything else passes.
+2. **`/proc/meminfo` must be scanned line-by-line, not first-line-only.** `MemAvailable` is the third line; `MemTotal` the first. First-line-only reading makes the 512 MB gate dead code — it never fired, ever.
+
+And the two flags-parsing invariants for survey/benchref (they were compile/fatal bugs in my original draft — encode them correctly): a flag parser that must accept both `--flag value` and `--flag=value` (benchref originally only parsed one form and every protocol command using the other form exited with usage); and one generic value-parse path per type, not one closure serving two return types (survey's `--samples` is u32, `--heatsoak` is u64 — a single non-generic closure cannot return both; it doesn't compile).
+
+### 7.6 Where Every Output Feeds (Decision Map)
+
+| Measurement | Consumer | Decision it drives |
+|---|---|---|
+| Proxy solo rates, per core | Phase 3 partitioning | Static work-split weights |
+| Allcore/solo ratios, per core | Phase 3 partitioning | Contention-corrected weights |
+| Memory:CPU canary asymmetry | Phase 2 segment design | Which phases benefit from big cores; whether counting sweep needs its own strategy |
+| Heatsoak end derate | Ledger + Phase 3 scheduling | Sustained throughput targets; burst-vs-sustained reporting columns |
+| Thermal cliff timestamp | Phase 3 engine scheduler | The thermal deadline the engine's phase-switching must beat |
+| Canary + baselines.json | benchref, all future benches | Cross-session comparability, cool-clock normalization |
+| Oracle tiers + mutants | Every engine phase | The merge gate: oracle green or it doesn't merge |
+| Knob-sweep best config | Phases 2–5 targets | The number we must beat is primesieve's *best*, not its default |
+| Algorithm ladder times | Phase 5 | Per-rung targets for Lehmer → LMO → Gourdon |
+
+---
+
+That's the full engineering of the post-proxy instruments. Translate it, and when the survey first prints a big:little ratio and the heatsoak first draws its curve, paste the output — the numbers themselves will tell us whether the instruments see clearly before we trust them to judge an engine.

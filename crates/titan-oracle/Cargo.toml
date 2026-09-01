@@ -1,0 +1,11 @@
+[package]
+name = "titan-oracle"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Zero external dependencies — 100% isolated standalone oracle
+
+[[bin]]
+name = "oracle"
+path = "src/main.rs"
