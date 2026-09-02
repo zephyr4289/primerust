@@ -8,6 +8,7 @@ pub mod checkpoint;
 pub mod d_neon;
 pub mod d_term;
 pub mod factortable;
+pub mod ftd_block;
 pub mod ftd_stream;
 pub mod gourdon;
 pub mod interval_walker;

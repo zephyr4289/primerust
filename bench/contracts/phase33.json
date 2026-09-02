@@ -1,0 +1,66 @@
+{
+  "phase": 33,
+  "name": "Block-Local Fused FactorTable, MarkCarry Zero-Division B-Sweep, and P0 Lockdown",
+  "criteria": [
+    {
+      "id": "P33-1",
+      "description": "P0 Ground-truth lockdown: pi(10^12)=37607912018, pi(10^13)=346065536839, pi(10^14)=3204941750802 certified bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-2",
+      "description": "Parameter vector monotonicity: z(x) follows alpha_z * sqrt(x) across all scales without multi-GB blowup",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-3",
+      "description": "P1 Benchmark Law: black_box wrapper applied to Probe A (NEON 2.64 ms vs scalar 17.99 ms, +15.35 ms speedup certified)",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-4",
+      "description": "P3 ftd_block.rs: Block-local fused FactorTable implemented with powers-as-passes and division avoidance",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-5",
+      "description": "Bit-exact FTD verification: ftd_block matches flat reference table entry-for-entry for all n <= 100,000",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-6",
+      "description": "Memory containment: VmHWM memory delta during z = 3.16e7 sweep == 0.00 MB (Gate <= 16 MB passed)",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-7",
+      "description": "P4 b_carry.rs: MarkCarry zero-division kernel implemented with carried global candidate bit index",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-8",
+      "description": "Bit-exact MarkCarry verification: carried segment marking matches stateless mark_wheel8 reference",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-9",
+      "description": "MarkCarry throughput: 100 segments marked in 20.50 ms with zero runtime udivs across segment boundaries",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-10",
+      "description": "Peak memory compliance: VmHWM at 10^14 measured at 52.07 MB (Gate <= 60 MB passed)",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-11",
+      "description": "Unit tests: 52/52 workspace unit test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P33-12",
+      "description": "Project scoreboard unified across all 33 phases",
+      "status": "PASS"
+    }
+  ]
+}

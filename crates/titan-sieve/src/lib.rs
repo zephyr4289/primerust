@@ -1,6 +1,7 @@
 //! titan-sieve: High-performance segmented wheel sieve of Eratosthenes.
 
 pub mod arena;
+pub mod b_carry;
 pub mod base;
 pub mod count;
 pub mod erat_big;
