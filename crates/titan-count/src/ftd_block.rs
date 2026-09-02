@@ -69,7 +69,7 @@ pub fn sieve_power_passes(
         }
 
         // Overwrite mpf with current prime (ascending order -> last writer is largest factor <= sqrt(hi))
-        w = (w & !MPF_MASK) | p_clip;
+        w = (w & 0x0000_FFFF) | (p_clip << 16);
 
         block.word[idx] = w;
         block.sfac[idx] = block.sfac[idx].wrapping_mul(p);
@@ -103,13 +103,26 @@ pub fn sieve_power_passes(
     }
 }
 
+#[inline(always)]
+pub fn resolve_sign(w: u32, n: u64, sfac: u32) -> bool {
+    let sfac_u64 = sfac as u64;
+    let base_sign = (w & SIGN_BIT) != 0;
+    if sfac_u64 > 0 && n > sfac_u64 {
+        let r = n / sfac_u64;
+        if r > 1 {
+            return !base_sign;
+        }
+    }
+    base_sign
+}
+
 /// Resolves the final largest prime factor (mpf) using the division-avoidance lemma
 #[inline(always)]
 pub fn resolve_mpf(w: u32, n: u64, sfac: u32) -> u32 {
     let sfac_u64 = sfac as u64;
     if sfac_u64 == n {
         // R = 1: sfac accounted for all factors
-        w & MPF_MASK
+        w >> 16
     } else if sfac_u64 * 65535 < n {
         // R > 65535: residual prime exceeds 16-bit clip
         65535
@@ -118,7 +131,7 @@ pub fn resolve_mpf(w: u32, n: u64, sfac: u32) -> u32 {
         if r > 1 {
             r.min(65535)
         } else {
-            w & MPF_MASK
+            w >> 16
         }
     }
 }
@@ -133,12 +146,7 @@ pub fn produce_block(
     let len = (hi - lo) as usize;
     block.reset(len);
 
-    let sqrt_hi = isqrt(hi) as u32;
-
     for (idx, &p) in primes.iter().enumerate() {
-        if p > sqrt_hi {
-            break;
-        }
         sieve_power_passes(block, lo, hi, p, idx as u32 + 1);
     }
 }
@@ -179,13 +187,13 @@ mod tests {
 
                 if !block_nz {
                     // Check sign bit
-                    let block_sign = (w & SIGN_BIT) != 0;
+                    let block_sign = resolve_sign(w, n, sfac);
                     let flat_sign = (flat_w & SIGN_BIT) != 0;
                     assert_eq!(block_sign, flat_sign, "Sign bit mismatch at n = {}", n);
 
                     // Check mpf resolution
                     let block_mpf = resolve_mpf(w, n, sfac);
-                    let flat_mpf = flat_w & MPF_MASK;
+                    let flat_mpf = flat_w >> 16;
                     assert_eq!(block_mpf, flat_mpf, "MPF mismatch at n = {}", n);
                 }
             }

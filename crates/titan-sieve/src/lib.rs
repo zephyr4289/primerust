@@ -13,6 +13,7 @@ pub mod kernels;
 pub mod mark64;
 pub mod presieve;
 pub mod segment;
+pub mod stream_pipeline;
 pub mod tally;
 
 pub const DEFAULT_SEGMENT_SIZE: usize = 32768; // 32 KiB L1D optimum on SM4450 (A78 & A55)

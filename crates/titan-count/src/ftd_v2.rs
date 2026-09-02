@@ -71,10 +71,9 @@ pub fn sieve_prime_wheel(
     // Find first wheel candidate multiple >= start_val
     let mut m = start_val;
     while m < val_hi {
-        let r = (m % 30) as usize;
-        let c_rel = cand_idx(r as u64);
-        if c_rel != 255 {
-            let c_idx = (m / 30) as usize * 8 + (c_rel as usize);
+        let slot = titan_core::wheel::R30[(m % 30) as usize];
+        if slot < 8 {
+            let c_idx = (m / 30) as usize * 8 + (slot as usize);
             if c_idx >= cand_lo && c_idx < cand_hi {
                 let local_idx = c_idx - cand_lo;
                 let mut w = block.word[local_idx];
@@ -83,7 +82,7 @@ pub fn sieve_prime_wheel(
                 if (w >> 18) & LPF_MASK == 0 {
                     w |= (p_idx & LPF_MASK) << 18;
                 }
-                w = (w & !MPF_MASK) | p_clip;
+                w = (w & 0x0000_FFFF) | (p_clip << 16);
 
                 block.word[local_idx] = w;
                 block.sfac[local_idx] = block.sfac[local_idx].wrapping_mul(p);
@@ -104,10 +103,9 @@ pub fn sieve_prime_wheel(
 
         let mut m_pow = start_pow;
         while m_pow < val_hi {
-            let r = (m_pow % 30) as usize;
-            let c_rel = cand_idx(r as u64);
-            if c_rel != 255 {
-                let c_idx = (m_pow / 30) as usize * 8 + (c_rel as usize);
+            let slot = titan_core::wheel::R30[(m_pow % 30) as usize];
+            if slot < 8 {
+                let c_idx = (m_pow / 30) as usize * 8 + (slot as usize);
                 if c_idx >= cand_lo && c_idx < cand_hi {
                     let local_idx = c_idx - cand_lo;
                     block.word[local_idx] |= NZ_BIT;
@@ -125,12 +123,25 @@ pub fn sieve_prime_wheel(
     }
 }
 
+#[inline(always)]
+pub fn resolve_sign_v2(w: u32, n: u64, sfac: u32) -> bool {
+    let sfac_u64 = sfac as u64;
+    let base_sign = (w & SIGN_BIT) != 0;
+    if sfac_u64 > 0 && n > sfac_u64 {
+        let r = n / sfac_u64;
+        if r > 1 {
+            return !base_sign;
+        }
+    }
+    base_sign
+}
+
 /// Resolves the largest prime factor (mpf) using the Coprime-Residual Lemma
 #[inline(always)]
 pub fn resolve_mpf_v2(w: u32, n: u64, sfac: u32) -> u32 {
     let sfac_u64 = sfac as u64;
     if sfac_u64 == n {
-        w & MPF_MASK
+        w >> 16
     } else if sfac_u64 * 65535 < n {
         65535
     } else {
@@ -138,7 +149,7 @@ pub fn resolve_mpf_v2(w: u32, n: u64, sfac: u32) -> u32 {
         if r > 1 {
             r.min(65535)
         } else {
-            w & MPF_MASK
+            w >> 16
         }
     }
 }
@@ -153,15 +164,9 @@ pub fn produce_block_v2(
     let len = cand_hi - cand_lo;
     block.reset(len, cand_lo);
 
-    let val_hi = candidate_val(cand_hi);
-    let sqrt_hi = isqrt(val_hi) as u32;
-
     for (idx, &p) in primes.iter().enumerate() {
         if p < 7 {
             continue;
-        }
-        if p > sqrt_hi {
-            break;
         }
         sieve_prime_wheel(block, cand_lo, cand_hi, p, idx as u32 + 1);
     }
@@ -210,12 +215,12 @@ mod tests {
 
                 if !block_nz {
                     alive_count += 1;
-                    let block_sign = (w & SIGN_BIT) != 0;
+                    let block_sign = resolve_sign_v2(w, n, sfac);
                     let flat_sign = (flat_w & SIGN_BIT) != 0;
                     assert_eq!(block_sign, flat_sign, "Sign mismatch at candidate n = {}", n);
 
                     let block_mpf = resolve_mpf_v2(w, n, sfac);
-                    let flat_mpf = flat_w & MPF_MASK;
+                    let flat_mpf = flat_w >> 16;
                     assert_eq!(block_mpf, flat_mpf, "MPF mismatch at candidate n = {}", n);
                 }
             }

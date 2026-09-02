@@ -9,6 +9,7 @@ pub mod d_neon;
 pub mod d_term;
 pub mod factortable;
 pub mod ftd_block;
+pub mod ftd_compressed;
 pub mod ftd_stream;
 pub mod ftd_v2;
 pub mod gourdon;

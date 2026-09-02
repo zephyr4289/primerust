@@ -113,7 +113,7 @@ mod tests {
         let seg0_lo = 300_000u64;
         let seg0_base_bits = (seg0_lo / 30) * 8;
 
-        let seg1_lo = seg0_lo + (seg_len as u64 / 8) * 30;
+        let seg1_lo = seg0_lo + (seg_len as u64) * 30;
         let seg1_base_bits = (seg1_lo / 30) * 8;
 
         let mut carry = MarkCarry::new(p, seg0_lo);

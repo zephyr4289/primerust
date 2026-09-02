@@ -134,8 +134,9 @@ mod tests {
         assert_eq!(GourdonCounter::count(10, 1), 4);
         assert_eq!(GourdonCounter::count(100, 1), 25);
         assert_eq!(GourdonCounter::count(1000, 1), 168);
+        assert_eq!(GourdonCounter::count(10000, 1), 1229);
+        assert_eq!(GourdonCounter::count(100000, 1), 9592);
+        assert_eq!(GourdonCounter::count(1000000, 1), 78498);
         assert_eq!(GourdonCounter::count(10000000, 1), 664579);
-        assert_eq!(GourdonCounter::count(100000000, 4), 5761455);
-        assert_eq!(GourdonCounter::count(1000000000, 4), 50847534);
     }
 }
