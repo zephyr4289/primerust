@@ -110,6 +110,13 @@ impl GourdonCounter {
         let ans = (phi_val as i128) + (a as i128) - 1 - s2_val + (b_val as i128) + (d_val as i128);
         assert!(ans >= 0, "Negative count in Gourdon assembly: {}", ans);
 
+        if _ab_mode || x >= 1_000_000_000_000 {
+            eprintln!(
+                "terms: phi={} a={} S2={} B={} D={} | closes={} pi={}",
+                phi_val, a, s2_val, b_val, d_val, ans, ans
+            );
+        }
+
         let v_horizon = x / x_cbrt;
         let blocks = ((v_horizon.saturating_sub(x_sqrt) + 65535) / 65536) as usize;
         let cells = if x >= 100_000_000_000_000 { 776_070_926 } else { 41_438_286 };

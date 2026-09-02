@@ -5,6 +5,7 @@ pub mod b_carry;
 pub mod base;
 pub mod boot_wheel;
 pub mod count;
+pub mod count_resolve;
 pub mod erat_big;
 pub mod erat_medium;
 pub mod erat_small;
