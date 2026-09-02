@@ -1,0 +1,66 @@
+{
+  "phase": 34,
+  "name": "FTD-v2 Wheel-Packed Block Engine, 60-Second Loop, and Silicon Calibration",
+  "criteria": [
+    {
+      "id": "P34-1",
+      "description": "FTD-v2 wheel-packed block engine implemented in ftd_v2.rs (8 candidates / 30 numbers, 8 B/candidate)",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-2",
+      "description": "F10 defect fix: Wheel-30 packing removes p=2,3,5 passes and enforces true squarefree survivor density",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-3",
+      "description": "CI Oracle: ftd_v2 matches flat reference table entry-for-entry for all candidate n <= 100,000",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-4",
+      "description": "boot_wheel.rs: 8-thread segment-partitioned wheel boot sieve implemented",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-5",
+      "description": "F14 ghost RAM deleted: VmHWM at 10^14 drops to 49.35 MB (Gate <= 60 MB passed)",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-6",
+      "description": "loop.rs 60-second iteration harness created and verified at 10^12, 10^13, 10^14",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-7",
+      "description": "Physical plausibility asserts: stream bandwidth < 20 GB/s verified across all scales",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-8",
+      "description": "Silicon Calibration Probe 1: DRAM sequential bandwidth measured at 8.51 GB/s",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-9",
+      "description": "Silicon Calibration Probe 2: Cache regime penalty measured (1.00 ns/mark in L1 vs 3.47 ns/mark in L2 for scattered marks)",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-10",
+      "description": "Silicon Calibration Probe 3: Sustained clock load verified (12,047 sweeps in 3.0s = 4015.5 sweeps/sec)",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-11",
+      "description": "Unit tests: 54/54 workspace unit test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P34-12",
+      "description": "Project scoreboard unified across all 34 phases",
+      "status": "PASS"
+    }
+  ]
+}

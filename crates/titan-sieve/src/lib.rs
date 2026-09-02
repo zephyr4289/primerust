@@ -3,6 +3,7 @@
 pub mod arena;
 pub mod b_carry;
 pub mod base;
+pub mod boot_wheel;
 pub mod count;
 pub mod erat_big;
 pub mod erat_medium;
