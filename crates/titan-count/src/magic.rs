@@ -65,6 +65,20 @@ impl MagicDivTable {
             y / entry.prime
         }
     }
+
+    /// K4: Batched magic division - processes 8 divisions at once.
+    /// Manual loop unrolling for ILP and reduced instruction overhead.
+    #[inline(always)]
+    pub fn div_batch8(&self, ys: &[u64; 8], prime_indices: &[usize; 8], results: &mut [u64; 8]) {
+        for i in 0..8 {
+            let entry = &self.divisors[prime_indices[i]];
+            if entry.prime >= 7 {
+                results[i] = ((ys[i] as u128 * entry.magic as u128) >> entry.shift) as u64;
+            } else {
+                results[i] = ys[i] / entry.prime;
+            }
+        }
+    }
 }
 
 #[cfg(test)]

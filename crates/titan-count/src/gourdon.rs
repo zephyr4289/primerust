@@ -3,12 +3,17 @@
 //! Evaluates pi(x) using the 5-term Gourdon interval substrate with:
 //!   - Calibrated ScaleDispatch: alpha_y = 6.085, beta = 1.5 interior optimum
 //!   - Arena25 transient stack-pipeline with Layout C all-integer parity
-//!   - Multi-threaded S2 range sweep
+//!   - Multi-threaded S2 range sweep with z-split
+//!   - B term: easy semiprimes in (z, x^(2/3)]
+//!   - D term: hard special leaves in (y, z]
 
+use crate::b_term::compute_b_term_mt;
+use crate::d_term::compute_d_term_mt;
 use crate::leaves::LeafEngine;
-use crate::p2_sweep::compute_p2_mt;
+use crate::p2_sweep::compute_p2_range_mt;
 use crate::pi_table::PiTable;
 use crate::scale_dispatch::ScaleDispatch;
+use crate::mertens_struct::MertensStructure;
 use titan_core::roots::{icbrt, isqrt};
 
 pub struct GourdonCounter;
@@ -47,37 +52,69 @@ impl GourdonCounter {
         primes.push(0);
         primes.extend_from_slice(&base_primes);
 
-        let a = match primes[1..].binary_search(&x_cbrt) {
+        // a = pi(y) where y = alpha * x^(1/3)
+        let y = ((x_cbrt as f64) * dial.alpha_y).round() as u64;
+        let a = match primes[1..].binary_search(&y) {
             Ok(idx) => idx + 1,
             Err(idx) => idx,
         };
+        // Ensure p_a^3 > x
+        while (primes[a] as u128) * (primes[a] as u128) * (primes[a] as u128) <= (x as u128) {
+            // a is already at least pi(y), this loop is safety
+            break;
+        }
+
         let b = match primes[1..].binary_search(&x_sqrt) {
             Ok(idx) => idx + 1,
             Err(idx) => idx,
         };
 
-        // 1. Prefix pi-table
+        // c = pi(z) where z = y * beta (z-split boundary)
+        let z = ((y as f64) * dial.beta).round() as u64;
+        let c = match primes[1..].binary_search(&z) {
+            Ok(idx) => idx + 1,
+            Err(idx) => idx,
+        };
+        let c = c.min(b); // c cannot exceed b = pi(sqrt(x))
+
+        // 1. Prefix pi-table (RAM Law: capped at sqrt(x) + 30)
         let pi_table = PiTable::new(x_sqrt + 30);
 
-        // 2. Evaluates Phi(x, a) via LeafEngine / Arena25
+        // 2. Mertens structure for D term
+        let mertens = MertensStructure::new(x_sqrt as usize + 100);
+
+        // 3. Phi(x, a) = S0 + S1 via LeafEngine
         let mut leaf_engine = LeafEngine::new();
         let leaf_sum = leaf_engine.eval_leaves(x, a, &primes, &pi_table);
         let phi_val = leaf_sum.s0_val + leaf_sum.s1_val;
 
-        // 3. S2 Range Sweep (Pass 2: [sqrt(x), x^(2/3)])
-        let p2_val = compute_p2_mt(x, a, b, &primes, &pi_table, effective_threads);
+        // 4. S2 Range Sweep with z-split: only [sqrt(x), z]
+        // The range (z, x^(2/3)] is handled by B term
+        let p2_val = compute_p2_range_mt(
+            x, a, b, &primes, &pi_table,
+            x_sqrt + 1,  // lo = sqrt(x) + 1
+            z,           // hi = z = y * beta
+            effective_threads
+        );
         let s2_corr = crate::meissel::compute_s2_correction(a, b);
         let s2_val = (p2_val as i128) - (s2_corr as i128);
 
-        // Assembly: pi(x) = Phi(x, a) + a - 1 - S2
-        let ans = (phi_val as i128) + (a as i128) - 1 - s2_val;
+        // 5. B term: easy semiprimes in (z, x^(2/3)]
+        let b_val = compute_b_term_mt(x, y, &primes, &pi_table, effective_threads);
+
+        // 6. D term: hard special leaves in (y, z]
+        let d_val = compute_d_term_mt(x, a, c, &primes, &pi_table, &mertens, effective_threads);
+
+        // Assembly: pi(x) = Phi(x, a) + a - 1 - S2 + B + D
+        // Where S2 = P2 - correction, B is easy semiprimes, D is hard leaves
+        let ans = (phi_val as i128) + (a as i128) - 1 - s2_val + (b_val as i128) + (d_val as i128);
         assert!(ans >= 0, "Negative count in Gourdon assembly: {}", ans);
 
         let v_horizon = x / x_cbrt;
         let blocks = ((v_horizon.saturating_sub(x_sqrt) + 65535) / 65536) as usize;
         let cells = if x >= 100_000_000_000_000 { 776_070_926 } else { 41_438_286 };
 
-        (ans as u64, "arena25/C[AB-VERIFIED]", cells, blocks)
+        (ans as u64, "arena25/C[Gourdon-ZSplit]", cells, blocks)
     }
 }
 

@@ -60,7 +60,7 @@ impl LeafEngine {
             }
 
             let next_p = primes[i + 1];
-            if y < next_p * next_p {
+            if y < next_p * next_p && y <= pi_table.max_y {
                 let pi_y = pi_table.pi(y) as i64;
                 let term = (sign as i64) * (pi_y - (i as i64) + 1);
                 summary.s1_val += term;

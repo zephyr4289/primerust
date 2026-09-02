@@ -3,7 +3,10 @@
 pub mod alpha;
 pub mod arena25;
 pub mod assembly;
+pub mod b_term;
 pub mod checkpoint;
+pub mod d_term;
+pub mod factortable;
 pub mod gourdon;
 pub mod interval_walker;
 pub mod leaf_block;
@@ -24,6 +27,7 @@ pub mod special_leaves;
 
 pub use arena25::Arena25Engine;
 pub use assembly::LehmerCounter;
+pub use factortable::Ftd;
 pub use gourdon::GourdonCounter;
 pub use leaf_block::{LeafBlockC, LeafBlockEngine};
 pub use lmo::LmoCounter;

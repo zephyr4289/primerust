@@ -195,3 +195,181 @@ pub fn compute_p2_mt(
 
     p2_total
 }
+
+/// Evaluates P2 over an explicit range [lo, hi] for z-split support.
+/// This allows the Gourdon algorithm to restrict the physical sweep to [x^(1/2), z]
+/// and delegate (z, x^(2/3)] to B/D terms.
+pub fn compute_p2_range(
+    x: u64,
+    a: usize,
+    b: usize,
+    primes: &[u64],
+    pi_table: &PiTable,
+    range_lo: u64,
+    range_hi: u64,
+) -> u128 {
+    if a >= b {
+        return 0;
+    }
+
+    let mut p2_total = 0u128;
+    let mut high_queries = Vec::new();
+
+    for i in (a + 1)..=b {
+        let p_i = primes[i];
+        let y = x / p_i;
+
+        // Only include queries that fall within the specified range
+        if y < range_lo || y > range_hi {
+            continue;
+        }
+
+        if y <= pi_table.max_y {
+            p2_total += pi_table.pi(y) as u128;
+        } else {
+            high_queries.push(y);
+        }
+    }
+
+    if high_queries.is_empty() {
+        return p2_total;
+    }
+
+    high_queries.sort_unstable();
+    let hi = *high_queries.last().unwrap().min(&range_hi);
+    let lo = range_lo.max(pi_table.max_y + 1);
+
+    let mut threshold_counts = vec![0u64; high_queries.len()];
+    let mut arena = SieveArena::new(hi, 32768); // 32 KiB for SD4G2
+    let initial_pi = pi_table.pi(pi_table.max_y);
+
+    count_primes_range_with_thresholds(
+        lo,
+        hi,
+        32768,
+        &mut arena,
+        &high_queries,
+        &mut threshold_counts,
+        initial_pi,
+    );
+
+    for cnt in threshold_counts {
+        p2_total += cnt as u128;
+    }
+
+    p2_total
+}
+
+/// Multi-threaded P2 evaluation over explicit range [range_lo, range_hi]
+pub fn compute_p2_range_mt(
+    x: u64,
+    a: usize,
+    b: usize,
+    primes: &[u64],
+    pi_table: &PiTable,
+    range_lo: u64,
+    range_hi: u64,
+    num_threads: usize,
+) -> u128 {
+    if a >= b || range_lo > range_hi {
+        return 0;
+    }
+    if num_threads <= 1 || (range_hi - range_lo) < 10_000_000 {
+        return compute_p2_range(x, a, b, primes, pi_table, range_lo, range_hi);
+    }
+
+    let mut p2_total = 0u128;
+    let mut high_queries = Vec::new();
+
+    for i in (a + 1)..=b {
+        let p_i = primes[i];
+        let y = x / p_i;
+
+        if y < range_lo || y > range_hi {
+            continue;
+        }
+
+        if y <= pi_table.max_y {
+            p2_total += pi_table.pi(y) as u128;
+        } else {
+            high_queries.push(y);
+        }
+    }
+
+    if high_queries.is_empty() {
+        return p2_total;
+    }
+
+    high_queries.sort_unstable();
+    let hi = *high_queries.last().unwrap().min(&range_hi);
+    let lo = range_lo.max(pi_table.max_y + 1);
+
+    const SEG_SPAN: u64 = 32768 * 30; // 32 KiB segments for SD4G2
+    let start_seg = lo / SEG_SPAN;
+    let end_seg = hi / SEG_SPAN;
+    let total_segs = end_seg - start_seg + 1;
+    let segs_per_thread = (total_segs + (num_threads as u64) - 1) / (num_threads as u64);
+
+    let mut thread_ranges = Vec::new();
+    let mut cur_seg = start_seg;
+    for t in 0..num_threads {
+        let seg_end = (cur_seg + segs_per_thread - 1).min(end_seg);
+        let slice_lo = if t == 0 { lo } else { cur_seg * SEG_SPAN };
+        let slice_hi = if t == num_threads - 1 || seg_end >= end_seg {
+            hi
+        } else {
+            (seg_end + 1) * SEG_SPAN - 1
+        };
+
+        if slice_lo <= slice_hi {
+            thread_ranges.push((slice_lo, slice_hi));
+        }
+        cur_seg = seg_end + 1;
+        if cur_seg > end_seg {
+            break;
+        }
+    }
+
+    let actual_threads = thread_ranges.len();
+    let mut thread_thresholds = Vec::with_capacity(actual_threads);
+    for &(s_lo, s_hi) in &thread_ranges {
+        let start_idx = high_queries.partition_point(|&y| y < s_lo);
+        let end_idx = high_queries.partition_point(|&y| y <= s_hi);
+        thread_thresholds.push(&high_queries[start_idx..end_idx]);
+    }
+
+    let mut thread_counts: Vec<Vec<u64>> = (0..actual_threads)
+        .map(|i| vec![0u64; thread_thresholds[i].len()])
+        .collect();
+    let mut thread_totals = vec![0u64; actual_threads];
+
+    std::thread::scope(|s| {
+        for (t, (counts_ref, total_ref)) in thread_counts.iter_mut().zip(thread_totals.iter_mut()).enumerate() {
+            let (s_lo, s_hi) = thread_ranges[t];
+            let th_slice = thread_thresholds[t];
+
+            s.spawn(move || {
+                let mut arena = SieveArena::new(s_hi, 32768);
+                *total_ref = count_primes_range_with_thresholds(
+                    s_lo,
+                    s_hi,
+                    32768,
+                    &mut arena,
+                    th_slice,
+                    counts_ref,
+                    0,
+                );
+            });
+        }
+    });
+
+    let mut running_base = pi_table.pi(pi_table.max_y);
+    for t in 0..actual_threads {
+        for &rel_cnt in &thread_counts[t] {
+            p2_total += (running_base + rel_cnt) as u128;
+        }
+        running_base += thread_totals[t];
+    }
+
+    p2_total
+}

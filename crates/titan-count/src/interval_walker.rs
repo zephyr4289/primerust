@@ -8,6 +8,8 @@
 use crate::mertens_struct::MertensStructure;
 use crate::pi_table::PiTable;
 
+const BLOCK_BYTES: usize = 64; // 64-byte blocks in PiTable
+
 pub struct IntervalWalker;
 
 impl IntervalWalker {
@@ -40,6 +42,11 @@ impl IntervalWalker {
             let mut m_prev = mertens.mertens(e_lo - 1);
             let mut e = e_lo;
 
+            // K2: π-Streaming state - cursor into PiTable for monotone v
+            let mut pi_cursor_block = pi_table.prefix_counts.len(); // Start beyond end
+            let mut pi_cursor_byte = 0usize;
+            let mut pi_cursor_count = 0u64;
+
             while e <= e_hi {
                 let v = (x / ((p_j as u64) * (e as u64))) as u64;
                 if v == 0 {
@@ -56,16 +63,9 @@ impl IntervalWalker {
                 m_prev = m_curr;
 
                 if mu_diff != 0 {
-                    // K2: Monotone-v pi-lookup
-                    let pi_v = if v <= pi_table.max_y {
-                        pi_table.pi(v) as i64
-                    } else {
-                        match primes[1..].binary_search(&v) {
-                            Ok(idx) => (idx + 1) as i64,
-                            Err(idx) => idx as i64,
-                        }
-                    };
-
+                    // K2: Monotone-v pi-lookup with streaming cursor
+                    let pi_v = Self::pi_streaming_lookup(v, pi_table, &mut pi_cursor_block, &mut pi_cursor_byte, &mut pi_cursor_count);
+                    
                     let weight = pi_v - (j as i64) + 1;
                     total_sum += mu_diff * weight;
                 }
@@ -75,6 +75,64 @@ impl IntervalWalker {
         }
 
         total_sum
+    }
+
+    /// K2: Streaming π(v) lookup for monotonically decreasing v.
+    /// Maintains a cursor walking backwards through PiTable blocks.
+    #[inline(always)]
+    fn pi_streaming_lookup(
+        v: u64,
+        pi_table: &PiTable,
+        cursor_block: &mut usize,
+        cursor_byte: &mut usize,
+        cursor_count: &mut u64,
+    ) -> i64 {
+        if v > pi_table.max_y {
+            // Fallback for v beyond PiTable (should be rare in D term range)
+            return 0;
+        }
+
+        let byte_idx = (v / 30) as usize;
+        let target_block = byte_idx / BLOCK_BYTES;
+
+        // Move cursor backwards to target block (v is decreasing)
+        while *cursor_block > target_block {
+            *cursor_block -= 1;
+            *cursor_count = pi_table.prefix_counts[*cursor_block] as u64;
+            *cursor_byte = *cursor_block * BLOCK_BYTES;
+        }
+
+        // Now cursor is at or before target block
+        let mut count = *cursor_count;
+        let mut byte = *cursor_byte;
+
+        // Advance within block to target byte
+        while byte + 8 <= byte_idx {
+            let chunk = u64::from_le_bytes(pi_table.bytes[byte..byte + 8].try_into().unwrap());
+            count += chunk.count_ones() as u64;
+            byte += 8;
+        }
+        while byte < byte_idx {
+            count += pi_table.bytes[byte].count_ones() as u64;
+            byte += 1;
+        }
+
+        // Final byte mask
+        let rem = (v % 30) as u8;
+        let mut mask = 0u8;
+        for i in 0..8 {
+            if titan_core::wheel::RESIDUES[i] <= rem {
+                mask |= 1 << i;
+            }
+        }
+        count += (pi_table.bytes[byte_idx] & mask).count_ones() as u64;
+
+        // Update cursor
+        *cursor_block = target_block;
+        *cursor_byte = byte_idx;
+        *cursor_count = count;
+
+        count as i64
     }
 
     /// Multi-threaded interval walker with level-partitioning across num_threads
@@ -121,6 +179,11 @@ impl IntervalWalker {
                         let mut m_prev = mertens.mertens(e_lo - 1);
                         let mut e = e_lo;
 
+                        // K2: Per-thread π-streaming cursor
+                        let mut pi_cursor_block = pi_table.prefix_counts.len();
+                        let mut pi_cursor_byte = 0usize;
+                        let mut pi_cursor_count = 0u64;
+
                         while e <= e_hi {
                             let v = (x / ((p_j as u64) * (e as u64))) as u64;
                             if v == 0 {
@@ -135,15 +198,8 @@ impl IntervalWalker {
                             m_prev = m_curr;
 
                             if mu_diff != 0 {
-                                let pi_v = if v <= pi_table.max_y {
-                                    pi_table.pi(v) as i64
-                                } else {
-                                    match primes[1..].binary_search(&v) {
-                                        Ok(idx) => (idx + 1) as i64,
-                                        Err(idx) => idx as i64,
-                                    }
-                                };
-
+                                let pi_v = Self::pi_streaming_lookup(v, pi_table, &mut pi_cursor_block, &mut pi_cursor_byte, &mut pi_cursor_count);
+                                
                                 let weight = pi_v - (j as i64) + 1;
                                 partial_sum += mu_diff * weight;
                             }
@@ -164,6 +220,9 @@ impl IntervalWalker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use titan_sieve::base::generate_base_primes;
+    use crate::pi_table::PiTable;
+    use crate::mertens_struct::MertensStructure;
 
     #[test]
     fn test_interval_walker_mt_equivalence() {

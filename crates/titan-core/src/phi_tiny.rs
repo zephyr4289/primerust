@@ -149,9 +149,41 @@ pub fn phi_tiny_mutant_missing_mod(x: u64, k: u64) -> u64 {
     }
 }
 
+#[inline(always)]
+pub fn phi2(x: u64) -> u64 {
+    phi_tiny(x, 2)
+}
+
+#[inline(always)]
+pub fn phi5(x: u64) -> u64 {
+    phi_tiny(x, 5)
+}
+
+#[inline(always)]
+pub fn phi6(x: u64) -> u64 {
+    phi_tiny(x, 6)
+}
+
+#[inline(always)]
+pub fn phi7(x: u64) -> u64 {
+    phi_tiny(x, 7)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ground_truth_100() {
+        assert_eq!(phi2(100), 33);
+        assert_eq!(phi_tiny(100, 4), 22); // 1 + primes in (7, 100] = 1 + 25 - 4 = 22
+        assert_eq!(phi7(100), 19);        // 1 + primes in (17, 100] = 1 + 25 - 7 = 19
+        // Lemma 3's exact hand check:
+        // pi(100) = phi(100, 2) + 4 - 1 - (pi(20) - 3 + 2) - (pi(14) - 4 + 2)
+        //         = 33 + 3 - (8 - 1) - (6 - 2) = 36 - 7 - 4 = 25
+        let pi_100 = phi2(100) + 4 - 1 - (8 - 3 + 2) - (6 - 4 + 2);
+        assert_eq!(pi_100, 25);
+    }
 
     // Naive sieve-based truth oracle for Phi(x, k)
     fn phi_naive_reference(x: u64, k: u64) -> u64 {

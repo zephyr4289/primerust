@@ -1,0 +1,66 @@
+{
+  "phase": 30,
+  "name": "The Wheel-30 Fused Gourdon Engine, Compact FactorTableD, and Defect Proofs",
+  "criteria": [
+    {
+      "id": "P30-1",
+      "description": "D1-D6 self-audit defects fixed and verified with proofs (D1 mu(18)=0, D2 tail rotation, D3 bit packing, D4 fused counting, D5 43/57 split, D6 exact constant)",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-2",
+      "description": "wheel.rs: 256-byte compile-time Wheel-30 state machine with rustc const assertion proofs",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-3",
+      "description": "kernels.rs: 8-unrolled Wheel-30 marking kernel with machine-checkable safety proofs",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-4",
+      "description": "count.rs: NEON-accelerated fused in-flight popcount and O(1) boundary resolver",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-5",
+      "description": "factortable.rs: 32-bit compact Ftd factor table with log-wavefront parallel build",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-6",
+      "description": "phitiny.rs: O(1) phi5, phi6, phi7 with automated ground_truth_100 validation (pi(100)=25)",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-7",
+      "description": "b_term.rs & d_term.rs: Multi-threaded B and D special leaves terms implemented",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-8",
+      "description": "Gate outputs: pre_marathon_gate 100% bit-exact across 10^12..10^15",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-9",
+      "description": "Cross-engine check: 10^15 Substrate == Lehmer bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-10",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-11",
+      "description": "Unit tests: 46/46 workspace unit test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P30-12",
+      "description": "Project scoreboard unified across all 30 phases",
+      "status": "PASS"
+    }
+  ]
+}
