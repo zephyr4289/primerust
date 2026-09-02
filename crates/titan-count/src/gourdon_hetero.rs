@@ -1,4 +1,4 @@
-//! Phase 45: High-Performance Multi-Threaded Heterogeneous Combinatorial Engine (GourdonHetero).
+//! Phase 46: High-Performance Multi-Threaded Heterogeneous Combinatorial Engine (GourdonHetero).
 //!
 //! Evaluates pi(x) using the multi-threaded combinatorial identity:
 //!   pi(x) = Phi(x, a) + T(a, b) - P2(x, a, b) - P3(x, a, c)
@@ -80,7 +80,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_gourdon_hetero_exactness() {
+    fn test_gourdon_hetero_worked_anchors() {
         assert_eq!(GourdonHetero::count(10, 8), 4);
         assert_eq!(GourdonHetero::count(100, 8), 25);
         assert_eq!(GourdonHetero::count(1_000, 8), 168);
