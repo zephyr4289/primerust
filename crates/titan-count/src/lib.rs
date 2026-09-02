@@ -14,6 +14,7 @@ pub mod ftd_compressed;
 pub mod ftd_stream;
 pub mod ftd_v2;
 pub mod gourdon;
+pub mod gourdon_hetero;
 pub mod interval_walker;
 pub mod leaf_block;
 pub mod leaves;
