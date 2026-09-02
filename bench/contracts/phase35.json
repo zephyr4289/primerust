@@ -1,0 +1,66 @@
+{
+  "phase": 35,
+  "name": "Tripwire Law, Phase Isolation Engine, and Canonical 256 MB Silicon Calibration",
+  "criteria": [
+    {
+      "id": "P35-1",
+      "description": "Tripwire enforcement in loop.rs: physical violations, memory blowup, or ground-truth mismatches trigger exit(1)",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-2",
+      "description": "loop_gourdon.rs & loop.rs: phase isolation flag --phase wired for boot_sieve, b_mark, ftd_build",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-3",
+      "description": "Isolated boot_sieve profile: 10^7 prime generation completed in 212.61 ms on 8T",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-4",
+      "description": "Isolated b_mark profile: 500 primes swept in 0.89 ms using MarkCarry",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-5",
+      "description": "Isolated ftd_build profile: 112,976 candidates generated in 6.60 ms with FTD-v2",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-6",
+      "description": "Canonical 256 MB DRAM streaming probe: 9.51 GB/s read, 4.93 GB/s RMW characterized on LPDDR5",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-7",
+      "description": "Silicon frequency audit: CPU 6-7 sustained at 2208 MHz (A78), CPU 0-5 at 1478-1958 MHz (A55)",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-8",
+      "description": "Memory containment lockdown: VmHWM at 10^14 strictly <= 49.30 MB (Gate <= 60 MB passed)",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-9",
+      "description": "Git-tracked baseline: loop_baseline.json created with physical telemetry across 10^12..10^14",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-10",
+      "description": "Law 0.5 compliance: all reported figures backed by on-silicon physical measurements",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-11",
+      "description": "Unit tests: 54/54 workspace unit test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P35-12",
+      "description": "Project scoreboard unified across all 35 phases",
+      "status": "PASS"
+    }
+  ]
+}

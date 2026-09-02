@@ -1,0 +1,35 @@
+{
+  "device": "Snapdragon 4 Gen 2 (SM4450)",
+  "arch": "aarch64",
+  "cores": 8,
+  "clock_ghz": 2.21,
+  "scales": {
+    "12": {
+      "x": 1000000000000,
+      "pi": 37607912018,
+      "median_ms": 692.56,
+      "vmhwm_mb": 7.50,
+      "status": "PASS"
+    },
+    "13": {
+      "x": 10000000000000,
+      "pi": 346065536839,
+      "median_ms": 4758.49,
+      "vmhwm_mb": 15.24,
+      "status": "PASS"
+    },
+    "14": {
+      "x": 100000000000000,
+      "pi": 3204941750802,
+      "median_ms": 32830.80,
+      "vmhwm_mb": 49.30,
+      "status": "PASS"
+    }
+  },
+  "calibrations": {
+    "dram_256mb_read_gb_s": 9.51,
+    "dram_256mb_rmw_gb_s": 4.93,
+    "a78_sustained_mhz": 2208.0,
+    "a55_sustained_mhz": 1804.8
+  }
+}
