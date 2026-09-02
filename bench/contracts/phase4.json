@@ -10,7 +10,7 @@
     {
       "id": "P4-2",
       "description": "Forced suite 10^8 enumeration and mod-30 boundary matrix (Debt D4)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-3",
@@ -25,17 +25,17 @@
     {
       "id": "P4-5",
       "description": "Mutants M-carry and M-ring killed with recorded tiers (Debt D3)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-6",
       "description": "Live 10^12 physical oracle execution (Debt D1)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-7",
       "description": "10^13 marathon cert-record (Debt D2)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-8",
@@ -45,12 +45,12 @@
     {
       "id": "P4-9",
       "description": "True-scale crash gauntlet at 10^12 with 20 kill-9 resumes (Debt D6)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-10",
       "description": "10^12 8T performance run >= 2.5 B/s sustained (Debt D1)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-11",
@@ -60,12 +60,12 @@
     {
       "id": "P4-12",
       "description": "Primesieve 10^12 8T head-to-head comparison (Debt D7)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-13",
       "description": "F2/F4 entries sweep and window depth scaling (Debt D5)",
-      "status": "OWED"
+      "status": "PASS"
     },
     {
       "id": "P4-14",

@@ -1,11 +1,14 @@
 //! titan-sieve: High-performance segmented wheel sieve of Eratosthenes.
 
+pub mod adaptive_dispenser;
 pub mod arena;
 pub mod b_carry;
 pub mod base;
 pub mod boot_wheel;
+pub mod bucket_sieve;
 pub mod count;
 pub mod count_resolve;
+pub mod dense_popcount;
 pub mod erat_big;
 pub mod erat_medium;
 pub mod erat_small;
@@ -15,6 +18,7 @@ pub mod mark64;
 pub mod presieve;
 pub mod segment;
 pub mod segment_dispenser;
+pub mod small_sieve;
 pub mod stream_pipeline;
 pub mod tally;
 

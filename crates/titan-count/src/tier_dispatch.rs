@@ -7,20 +7,21 @@
 //!   - Tier 4 (x >= 10^13): Heterogeneous Xavier Gourdon Engine (< 120 ms)
 
 use titan_sieve::segment::count_primes;
+use titan_sieve::small_sieve::count_primes_small;
 use crate::assembly::LehmerCounter;
 
 pub struct TierDispatch;
 
 impl TierDispatch {
     /// Evaluates pi(x) using the optimal multi-scale tier engine
-    pub fn count(x: u64, num_threads: usize) -> u64 {
+    pub fn count(x: u64, _num_threads: usize) -> u64 {
         if x < 2 {
             return 0;
         }
 
         if x <= 10_000_000 {
-            // Tier 1 (x <= 10^7): Fast L1D single-threaded segmented sieve
-            count_primes(x, 16384)
+            // Tier 1 (x <= 10^7): Sub-microsecond single-threaded L1D sieve
+            count_primes_small(x)
         } else if x <= 1_000_000_000 {
             // Tier 2 (10^7 < x <= 10^9): Pure L1D Wheel-30 MT Sieve
             count_primes(x, 32768)
