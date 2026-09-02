@@ -1,6 +1,9 @@
-//! B Term: Deleglise-Rivat / Gourdon B(x, y) using segmented sieve.
+//! B Term: Deleglise-Rivat / Gourdon B(x, y) using single-pass batched segmented sieve.
 //!
 //! B(x, y) = sum_{p in (y, sqrt(x)]} pi(x / p)
+//!
+//! Evaluates all thresholds in a single unified sweep over [sqrt(x), x / (y + 1)]
+//! with zero redundant re-sieving.
 
 use crate::pi_table::PiTable;
 use titan_core::roots::isqrt;
@@ -55,67 +58,35 @@ fn compute_b_term_internal(
         return 0;
     }
 
-    if num_threads <= 1 || (end_idx - start_idx) < 100 {
-        return compute_b_term_thread(x, primes, pi_table, start_idx, end_idx);
-    }
-
     let total_primes = end_idx - start_idx + 1;
-    let chunk_size = (total_primes + num_threads - 1) / num_threads;
-    let mut thread_sums = vec![0u128; num_threads];
-
-    std::thread::scope(|s| {
-        for (t, sum_out) in thread_sums.iter_mut().enumerate() {
-            let s_start = start_idx + t * chunk_size;
-            let s_end = (start_idx + (t + 1) * chunk_size - 1).min(end_idx);
-            if s_start <= end_idx {
-                s.spawn(move || {
-                    *sum_out = compute_b_term_thread(x, primes, pi_table, s_start, s_end);
-                });
-            }
-        }
-    });
-
-    thread_sums.into_iter().sum()
-}
-
-fn compute_b_term_thread(
-    x: u64,
-    primes: &[u64],
-    pi_table: &PiTable,
-    start_idx: usize,
-    end_idx: usize,
-) -> u128 {
+    let mut thresholds = Vec::with_capacity(total_primes);
     let mut sum = 0u128;
-    let x_sqrt = isqrt(x);
 
-    for i in (start_idx..=end_idx).rev() {
+    // Separate into table lookups (xp <= max_y) and sieve thresholds (xp > max_y)
+    for i in start_idx..=end_idx {
         let p = primes[i];
         if p > x_sqrt {
             continue;
         }
-
         let xp = x / p;
-
-        if xp <= x_sqrt {
+        if xp <= pi_table.max_y {
             sum += pi_table.pi(xp) as u128;
         } else {
-            let cnt = count_primes_range_with_segmented_sieve(xp, pi_table);
-            sum += cnt as u128;
+            thresholds.push(xp);
         }
     }
 
-    sum
-}
-
-fn count_primes_range_with_segmented_sieve(n: u64, pi_table: &PiTable) -> u64 {
-    if n <= pi_table.max_y {
-        return pi_table.pi(n);
+    if thresholds.is_empty() {
+        return sum;
     }
 
-    let lo = pi_table.max_y + 1;
-    let hi = n;
+    // Sort thresholds in ascending order for single-pass sweep
+    thresholds.sort_unstable();
 
-    let mut threshold_counts = vec![0u64; 1];
+    let lo = pi_table.max_y + 1;
+    let hi = *thresholds.last().unwrap();
+
+    let mut threshold_counts = vec![0u64; thresholds.len()];
     let mut arena = SieveArena::new(hi, 32768);
     let initial_pi = pi_table.pi(pi_table.max_y);
 
@@ -124,12 +95,13 @@ fn count_primes_range_with_segmented_sieve(n: u64, pi_table: &PiTable) -> u64 {
         hi,
         32768,
         &mut arena,
-        &[hi],
+        &thresholds,
         &mut threshold_counts,
         initial_pi,
     );
 
-    threshold_counts[0]
+    let sieve_sum: u128 = threshold_counts.into_iter().map(|c| c as u128).sum();
+    sum + sieve_sum
 }
 
 #[cfg(test)]

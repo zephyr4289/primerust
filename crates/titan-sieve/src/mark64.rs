@@ -52,7 +52,8 @@ pub unsafe fn mark_wheel64(
     }
 }
 
-/// Safe helper to mark a byte slice treated as 64-bit words where aligned.
+/// Safe helper to mark a byte slice: uses 64-bit word marking for p < 37,
+/// falling back to 8-unrolled byte marking for p >= 37 per the Mark-Spacing Law (D9).
 pub fn mark_segment_u64(
     bits: &mut [u8],
     p: u64,
@@ -61,7 +62,8 @@ pub fn mark_segment_u64(
     let (i0, _r, s) = first_mark(p, seg_lo);
     let d = crate::kernels::compute_wheel_deltas_for_prime(p, s);
 
-    if bits.len() >= 8 && bits.as_ptr() as usize % 8 == 0 {
+    // D9: Restrict mark_wheel64 to p < 37 (where marks/word = 64/p >= 2.2)
+    if p < 37 && bits.len() >= 8 && bits.as_ptr() as usize % 8 == 0 {
         let num_words = bits.len() / 8;
         let words = unsafe {
             core::slice::from_raw_parts_mut(bits.as_mut_ptr() as *mut u64, num_words)
