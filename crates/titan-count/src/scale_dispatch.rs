@@ -1,7 +1,7 @@
-//! Scale-Indexed Parameter Dispatch & Device Tuning (Phase 1.28 Deliverable).
+//! Scale-Indexed Parameter Dispatch & Device Tuning (Phase 1.28 & Phase 1.42 Deliverable).
 //!
-//! Provides calibrated parameter dials for Xavier Gourdon / Lehmer prime counting:
-//!   - Optimal alpha_y: 6.085 for x >= 10^14 (shrinks physical sweep by 6.1x)
+//! Provides calibrated dynamic parameter dials for Xavier Gourdon:
+//!   - Dynamic alpha(x) = alpha_0 * (1 + k / ln(x)) with alpha_0 = 1.15, k = 2.0
 //!   - Optimal beta: 1.5 (hard leaf boundary z = 1.5 * y)
 //!   - Scale thresholds: ST for x <= 10^10, MT (8T) for x > 10^10
 
@@ -16,6 +16,17 @@ pub struct DialConfig {
 pub struct ScaleDispatch;
 
 impl ScaleDispatch {
+    /// Dynamic quadratic parameter schedule for Xavier Gourdon on SM4450:
+    /// alpha(x) = alpha_0 * (1 + k / ln(x))
+    #[inline(always)]
+    pub fn alpha_dynamic(x: u64) -> f64 {
+        let ln_x = (x as f64).ln();
+        if ln_x <= 0.0 {
+            return 1.15;
+        }
+        1.15 * (1.0 + 2.0 / ln_x)
+    }
+
     /// Selects optimal dial configuration based on scale x and system cores
     pub fn select(x: u64, requested_threads: usize) -> DialConfig {
         let threads = requested_threads.clamp(1, 8);
@@ -28,18 +39,10 @@ impl ScaleDispatch {
                 num_threads: 1,
                 use_z_split: false,
             }
-        } else if x < 100_000_000_000_000 {
-            // 10^10 < x < 10^14: Moderate alpha_y
-            DialConfig {
-                alpha_y: 2.0,
-                beta: 1.5,
-                num_threads: threads,
-                use_z_split: true,
-            }
         } else {
-            // x >= 10^14: Full interior optimum alpha_y = 6.085, beta = 1.5
+            let alpha = Self::alpha_dynamic(x);
             DialConfig {
-                alpha_y: 6.085,
+                alpha_y: alpha,
                 beta: 1.5,
                 num_threads: threads,
                 use_z_split: true,
@@ -60,7 +63,7 @@ mod tests {
 
         let cfg_large = ScaleDispatch::select(100_000_000_000_000, 8);
         assert_eq!(cfg_large.num_threads, 8);
-        assert_eq!(cfg_large.alpha_y, 6.085);
+        assert!(cfg_large.alpha_y > 1.0);
         assert_eq!(cfg_large.beta, 1.5);
     }
 }

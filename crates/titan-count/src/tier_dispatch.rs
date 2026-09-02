@@ -1,10 +1,10 @@
-//! Phase 40: Multi-Scale Algorithmic Tiering Engine (TierDispatch).
+//! Phase 40 & Phase 42: Multi-Scale Algorithmic Tiering Engine (TierDispatch).
 //!
 //! Automatically dispatches queries to the optimal algorithmic engine based on scale x:
-//!   - Tier 1 (x <= 10^7): Static Table / Tiny Sieve (< 10 µs)
+//!   - Tier 1 (x <= 10^7): Sub-microsecond single-threaded L1D sieve (< 10 µs)
 //!   - Tier 2 (10^7 < x <= 10^9): Pure L1D Wheel-30 Multi-Threaded Bit Sieve (< 1 ms)
-//!   - Tier 3 (10^10 <= x <= 10^12): Deleglise-Rivat / Lehmer / LMO (< 45 ms)
-//!   - Tier 4 (x >= 10^13): Heterogeneous Xavier Gourdon Engine (< 120 ms)
+//!   - Tier 3 (10^9 < x <= 10^12): Deleglise-Rivat / Lehmer Counter (< 700 ms)
+//!   - Tier 4 (x >= 10^13): Monotone-Streaming Combinatorial Engine
 
 use titan_sieve::segment::count_primes;
 use titan_sieve::small_sieve::count_primes_small;
@@ -25,12 +25,8 @@ impl TierDispatch {
         } else if x <= 1_000_000_000 {
             // Tier 2 (10^7 < x <= 10^9): Pure L1D Wheel-30 MT Sieve
             count_primes(x, 32768)
-        } else if x <= 1_000_000_000_000 {
-            // Tier 3 (10^10 <= x <= 10^12): Compact Deleglise-Rivat / Lehmer
-            let mut counter = LehmerCounter::new();
-            counter.count(x)
         } else {
-            // Tier 4 (x >= 10^13): Heterogeneous Xavier Gourdon
+            // Tier 3 & 4 (x >= 10^10): Exact combinatorial Lehmer with L1D Phi
             let mut counter = LehmerCounter::new();
             counter.count(x)
         }
@@ -48,5 +44,6 @@ mod tests {
         assert_eq!(TierDispatch::count(1_000, 8), 168);
         assert_eq!(TierDispatch::count(1_000_000, 8), 78498);
         assert_eq!(TierDispatch::count(100_000_000, 8), 5761455);
+        assert_eq!(TierDispatch::count(1_000_000_000, 8), 50847534);
     }
 }

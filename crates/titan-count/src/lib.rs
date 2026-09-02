@@ -3,6 +3,7 @@
 pub mod alpha;
 pub mod arena25;
 pub mod assembly;
+pub mod b_monotone;
 pub mod b_term;
 pub mod checkpoint;
 pub mod d_neon;

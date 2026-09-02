@@ -1,3 +1,4 @@
+pub mod affinity;
 pub mod canary;
 pub mod phase_timers;
 pub mod pin;
