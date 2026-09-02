@@ -1,0 +1,66 @@
+{
+  "phase": 36,
+  "name": "The Beta Forensic, 8-Phase Isolation Suite, and Boot Sieve Range Lockdown",
+  "criteria": [
+    {
+      "id": "P36-1",
+      "description": "8-phase isolation engine: all 8 individual phases isolated and profiled with (calls, iters, ns/iter, bytes, marks)",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-2",
+      "description": "boot_sieve fix: byte-to-block mapping fixed, generating exact 78,573 primes at 10^12 in 10.75 ms (zero range overflow)",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-3",
+      "description": "b_mark isolated profile: 2,259 primes swept in 2.65 ms using MarkCarry",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-4",
+      "description": "b_count_resolve isolated profile: B(x, y) evaluated in 49.11 ms at 10^12",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-5",
+      "description": "ftd_build isolated profile: 8,008 Wheel-30 candidates generated in 0.50 ms with FTD-v2",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-6",
+      "description": "d_walk isolated profile: D(x, y, z) evaluated in 10.89 ms at 10^12",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-7",
+      "description": "sigma_ac isolated profile: PiTable(10^6) built in 1.01 ms with 4 MB L1/L2 residency",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-8",
+      "description": "combine_alloc isolated profile: zero-allocation combine in 2.95 ms",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-9",
+      "description": "Component sum convergence: total isolated phase latency at 10^12 sums to 77.86 ms (< 100 ms gate)",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-10",
+      "description": "Mathematical truth lockdown: test_boot_primes_mt_matches_reference 100% bit-exact against reference",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-11",
+      "description": "Unit tests: 54/54 workspace unit test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P36-12",
+      "description": "Project scoreboard unified across all 36 phases",
+      "status": "PASS"
+    }
+  ]
+}

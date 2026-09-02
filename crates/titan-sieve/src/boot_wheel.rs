@@ -17,18 +17,18 @@ pub fn generate_boot_primes_mt(limit: u64, num_threads: usize) -> Vec<u64> {
     }
 
     let sqrt_lim = isqrt(limit);
-    let small_primes = generate_base_primes(sqrt_lim + 100);
+    let range_lo = ((sqrt_lim + 100) / 30) * 30 + 30;
+    let small_primes = generate_base_primes(range_lo);
 
     let mut primes = Vec::with_capacity((limit as f64 / (limit as f64).ln() * 1.1) as usize);
-    primes.extend(small_primes.iter().copied().take_while(|&p| p <= limit));
+    primes.extend(small_primes.iter().copied().take_while(|&p| p < range_lo && p <= limit));
 
-    let range_lo = (sqrt_lim / 30) * 30 + 30;
     if range_lo >= limit {
         return primes;
     }
 
     let total_range = limit - range_lo;
-    let seg_span = (BOOT_SEG_BYTES as u64 / 8) * 30; // Numbers spanned by 32 KiB segment
+    let seg_span = (BOOT_SEG_BYTES as u64) * 30; // 32,768 bytes = 983,040 integers per segment
     let num_segs = ((total_range + seg_span - 1) / seg_span) as usize;
 
     let threads = num_threads.clamp(1, 8);
@@ -81,8 +81,7 @@ pub fn generate_boot_primes_mt(limit: u64, num_threads: usize) -> Vec<u64> {
                     if b == 0xFF {
                         continue;
                     }
-                    let block_num = (byte_idx / 8) as u64;
-                    let block_base = seg_lo + block_num * 30;
+                    let block_base = seg_lo + (byte_idx as u64) * 30;
 
                     for bit in 0..8 {
                         if b & (1 << bit) == 0 {
