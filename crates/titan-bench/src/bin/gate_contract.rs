@@ -106,7 +106,7 @@ fn main() {
         let mut total_fail = 0;
         let mut total_owed = 0;
 
-        for p in 0..=44 {
+        for p in 0..=45 {
             if Path::new(&format!("bench/contracts/phase{}.json", p)).exists() {
                 let (pass, fail, owed) = eval_phase(p);
                 total_pass += pass;
@@ -116,7 +116,7 @@ fn main() {
         }
 
         println!("\n============================================================");
-        println!("PROJECT RETRO-AUDIT SUMMARY (PHASES 0 - 44):");
+        println!("PROJECT RETRO-AUDIT SUMMARY (PHASES 0 - 45):");
         println!("  Total Certified Criteria : {}", total_pass + total_fail + total_owed);
         println!("  PASS                     : {}", total_pass);
         println!("  FAIL                     : {}", total_fail);

@@ -1,7 +1,11 @@
-//! Phase 44: High-Performance Multi-Threaded Combinatorial Engine (GourdonHetero).
+//! Phase 45: High-Performance Multi-Threaded Heterogeneous Combinatorial Engine (GourdonHetero).
 //!
-//! Evaluates pi(x) using parallelized Phi, accelerated analytical P2, and P3 sweeps:
+//! Evaluates pi(x) using the multi-threaded combinatorial identity:
 //!   pi(x) = Phi(x, a) + T(a, b) - P2(x, a, b) - P3(x, a, c)
+//! where:
+//!   - a = pi(x^(1/4))
+//!   - b = pi(x^(1/2))
+//!   - c = pi(x^(1/3))
 //!
 //! Parallelized across Snapdragon 4 Gen 2 (SM4450) DynamIQ cluster:
 //!   - Cores 6, 7 (Cortex-A78): Coordinator and Phi(x, a) parallel spine
