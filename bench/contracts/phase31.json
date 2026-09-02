@@ -1,0 +1,66 @@
+{
+  "phase": 31,
+  "name": "High-Throughput NEON & Memory-Hierarchy Exploitation",
+  "criteria": [
+    {
+      "id": "P31-1",
+      "description": "d_neon.rs: NEON-vectorized mu=0 kill switch and SIMD leaf collector (vld1q_u32, vandq_u32, vceqzq_u32)",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-2",
+      "description": "mark64.rs: 64-bit word-aligned sieve marking kernel eliminating Read-For-Ownership (RFO) byte-write tax",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-3",
+      "description": "sigma_l1.rs: L1-locked Sigma-terms with 5 KiB static cache tables and compile-time closed forms Sigma5..Sigma7",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-4",
+      "description": "ftd_stream.rs: 2 MiB L2 cache-resident streaming FactorTableD engine shrinking working RAM to < 10 MB",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-5",
+      "description": "Bit-exact identity: ftd_stream matches monolithic Ftd table across all composite and prime entries",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-6",
+      "description": "Bit-exact marking: mark_wheel64 matches mark_wheel8 reference bitmap across all residue units",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-7",
+      "description": "NEON alive counting: d_neon::count_alive_entries matches scalar ground truth on full domain",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-8",
+      "description": "Gate outputs: pre_marathon_gate 100% bit-exact across 10^12..10^15",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-9",
+      "description": "Cross-engine check: 10^15 Substrate == Lehmer bit-exact",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-10",
+      "description": "Differentials: 5-point differential suite in [10^15, 10^16] bit-exact vs primecount",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-11",
+      "description": "Unit tests: 50/50 workspace unit test suites 100% green",
+      "status": "PASS"
+    },
+    {
+      "id": "P31-12",
+      "description": "Project scoreboard unified across all 31 phases",
+      "status": "PASS"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ pub mod erat_big;
 pub mod erat_medium;
 pub mod erat_small;
 pub mod kernels;
+pub mod mark64;
 pub mod presieve;
 pub mod segment;
 pub mod tally;
