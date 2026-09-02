@@ -10,9 +10,11 @@ pub mod erat_big;
 pub mod erat_medium;
 pub mod erat_small;
 pub mod kernels;
+pub mod l1_popcount;
 pub mod mark64;
 pub mod presieve;
 pub mod segment;
+pub mod segment_dispenser;
 pub mod stream_pipeline;
 pub mod tally;
 

@@ -34,6 +34,7 @@ pub mod pi_table;
 pub mod scale_dispatch;
 pub mod sigma_l1;
 pub mod special_leaves;
+pub mod tier_dispatch;
 
 pub use arena25::Arena25Engine;
 pub use assembly::LehmerCounter;
