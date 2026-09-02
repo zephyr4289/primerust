@@ -1,5 +1,6 @@
 //! titan-count: Lehmer-class combinatorial prime counting engine.
 
+pub mod a_term;
 pub mod alpha;
 pub mod arena25;
 pub mod assembly;
