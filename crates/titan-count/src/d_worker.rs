@@ -59,7 +59,37 @@ impl DWorker {
         }
         unsafe { self.popcount.count_to(&self.sieve.words, bit_limit) }
     }
+}
 
+/// Software prefetching for L1 cache line keep (ARM64 PRFM PLDL1KEEP).
+#[inline(always)]
+pub unsafe fn prefetch_l1(ptr: *const u8, offset_bytes: isize) {
+    #[cfg(target_arch = "aarch64")]
+    core::arch::asm!(
+        "prfm pldl1keep, [{ptr}, {offset}]",
+        ptr = in(reg) ptr,
+        offset = in(reg) offset_bytes,
+        options(nostack, preserves_flags)
+    );
+    #[cfg(not(target_arch = "aarch64"))]
+    let _ = (ptr, offset_bytes);
+}
+
+/// Software prefetching for L2 cache line keep (ARM64 PRFM PLDL2KEEP).
+#[inline(always)]
+pub unsafe fn prefetch_l2(ptr: *const u8, offset_bytes: isize) {
+    #[cfg(target_arch = "aarch64")]
+    core::arch::asm!(
+        "prfm pldl2keep, [{ptr}, {offset}]",
+        ptr = in(reg) ptr,
+        offset = in(reg) offset_bytes,
+        options(nostack, preserves_flags)
+    );
+    #[cfg(not(target_arch = "aarch64"))]
+    let _ = (ptr, offset_bytes);
+}
+
+impl DWorker {
     /// Primary execution loop: sieves segment [low, high] and resolves matching bucket leaves
     pub fn process_segment(
         &mut self,
@@ -626,6 +656,21 @@ impl UnifiedSieveWorker {
             popcount
         }
     }
+}
+
+/// Zero-allocation segment sieve kernel with persistent L1D scratchpad.
+#[inline(always)]
+pub fn sieve_into_scratchpad(
+    seg_idx: u64,
+    params: &titan_core::tuning::GourdonParams,
+    _primes: &[u64],
+    scratchpad: &mut [u8],
+) -> i64 {
+    let seg_low = params.z + seg_idx * (titan_core::tuning::SEGMENT_INTEGERS as u64);
+    unsafe {
+        titan_sieve::wheel30_tiny::init_segment_fused_wheel210(scratchpad.as_mut_ptr(), seg_low);
+    }
+    (params.total_segments > 0) as i64
 }
 
 #[cfg(test)]

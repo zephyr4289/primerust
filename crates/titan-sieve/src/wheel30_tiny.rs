@@ -196,6 +196,83 @@ impl Default for TinyPrimeMaskTable {
     }
 }
 
+const WHEEL30_RESIDUES: [u8; 8] = [1, 7, 11, 13, 17, 19, 23, 29];
+
+const fn build_wheel210_template() -> [u8; 7] {
+    let mut template = [0xFFu8; 7];
+    let mut b = 0;
+    while b < 7 {
+        let mut bit = 0;
+        while bit < 8 {
+            let r = WHEEL30_RESIDUES[bit] as usize;
+            if (b * 30 + r) % 7 == 0 {
+                template[b] &= !(1u8 << bit);
+            }
+            bit += 1;
+        }
+        b += 1;
+    }
+    template
+}
+
+const WHEEL210_BASE_TEMPLATE: [u8; 7] = build_wheel210_template();
+
+/// Initializes the 16,016-byte segment directly with Prime 7 pre-marked.
+/// Eliminates memset(0xFF) and skips Prime 7 scalar sieving entirely.
+#[inline(always)]
+pub unsafe fn init_segment_fused_wheel210(dst: *mut u8, seg_low: u64) {
+    let byte_offset = ((seg_low / 30) % 7) as usize;
+
+    let mut rotated = [0u8; 7];
+    for i in 0..7 {
+        rotated[i] = WHEEL210_BASE_TEMPLATE[(i + byte_offset) % 7];
+    }
+
+    // Expand 7 bytes to 112 bytes (exactly 7 x 16-byte vectors)
+    let mut block112 = [0u8; 112];
+    for i in 0..112 {
+        block112[i] = rotated[i % 7];
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        use core::arch::aarch64::*;
+        let v0 = vld1q_u8(block112.as_ptr());
+        let v1 = vld1q_u8(block112.as_ptr().add(16));
+        let v2 = vld1q_u8(block112.as_ptr().add(32));
+        let v3 = vld1q_u8(block112.as_ptr().add(48));
+        let v4 = vld1q_u8(block112.as_ptr().add(64));
+        let v5 = vld1q_u8(block112.as_ptr().add(80));
+        let v6 = vld1q_u8(block112.as_ptr().add(96));
+
+        let mut ptr = dst;
+        for _ in 0..143 {
+            vst1q_u8(ptr, v0);
+            vst1q_u8(ptr.add(16), v1);
+            vst1q_u8(ptr.add(32), v2);
+            vst1q_u8(ptr.add(48), v3);
+            vst1q_u8(ptr.add(64), v4);
+            vst1q_u8(ptr.add(80), v5);
+            vst1q_u8(ptr.add(96), v6);
+            ptr = ptr.add(112);
+        }
+    }
+
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        let mut ptr = dst;
+        for _ in 0..143 {
+            core::ptr::copy_nonoverlapping(block112.as_ptr(), ptr, 112);
+            ptr = ptr.add(112);
+        }
+    }
+
+    // If this is segment covering 0, preserve prime 7 itself
+    if seg_low == 0 {
+        *dst |= 1u8 << 1; // Bit 1 is residue 7
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,6 +326,31 @@ mod tests {
             }
 
             assert_eq!(buf_std, buf_fused, "Fused parity mismatch at seg_idx {}", seg_idx);
+        }
+    }
+
+    #[test]
+    fn test_fused_wheel210_init() {
+        for seg_idx in [0u64, 1, 2, 7, 13, 21, 100] {
+            let seg_low = seg_idx * 491_520;
+            let mut buf = [0xAAu8; SEGMENT_BYTES];
+            unsafe {
+                init_segment_fused_wheel210(buf.as_mut_ptr(), seg_low);
+            }
+
+            for byte in 0..1000 {
+                for bit in 0..8 {
+                    let res = BIT_TO_RESIDUE[bit] as u64;
+                    let n = seg_low + (byte as u64) * 30 + res;
+                    let is_marked = (buf[byte] & (1 << bit)) == 0;
+                    let should_be_marked = (n % 7 == 0) && (n > 7 || seg_low > 0);
+                    assert_eq!(
+                        is_marked, should_be_marked,
+                        "Mismatch for n = {} (seg_idx {}) at byte {}, bit {}: is_marked={}, should={}",
+                        n, seg_idx, byte, bit, is_marked, should_be_marked
+                    );
+                }
+            }
         }
     }
 }

@@ -4,8 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Zero runtime dependencies — pure mathematical substrate
+libc = "0.2"
 
 [[bin]]
 name = "core_gate"
 path = "src/bin/core_gate.rs"
+
+[[bin]]
+name = "stage_ectomy_bench"
+path = "src/bin/stage_ectomy_bench.rs"

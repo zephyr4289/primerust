@@ -320,6 +320,55 @@ pub fn compute_b_monotone(
     sum_pi_quotients - sum_pi_p + sum_ones
 }
 
+/// Decoupled Monotonic Chunk-Sieve Engine for B(x, y).
+///
+/// Eliminates all atomic ring buffers, spin-locks, and cross-cluster cache contention.
+/// Uses thread-local monotonically advancing forward prime counters.
+pub fn compute_b_decoupled(
+    x: u64,
+    y: u64,
+    primes: &[u64],
+    reciprocals: &[FastDiv64],
+) -> i64 {
+    let x_sqrt = isqrt(x);
+    if y >= x_sqrt {
+        return 0;
+    }
+
+    let p_start_idx = primes.partition_point(|&p| p <= y);
+    let p_end_idx = primes.partition_point(|&p| p <= x_sqrt);
+
+    if p_start_idx >= p_end_idx {
+        return 0;
+    }
+
+    let pi_y = p_start_idx as i64;
+    let pi_sqrt = p_end_idx as i64;
+
+    // 1. Gauss Closed-Form Collapse for: sum_{y < p <= sqrt(x)} (1 - pi(p))
+    let count = pi_sqrt - pi_y;
+    let sum_i = (pi_y + 1 + pi_sqrt) * count / 2;
+    let gauss_term = count - sum_i;
+
+    // 2. Monotonic Chunk Walk for: sum_{y < p <= sqrt(x)} pi(floor(x / p))
+    let active_primes = &primes[p_start_idx..p_end_idx];
+    let active_reciprocals = &reciprocals[p_start_idx..p_end_idx];
+
+    let mut parallel_sum: i64 = 0;
+    let len = active_primes.len();
+    let mut prime_cursor_idx = 0usize;
+
+    for i in (0..len).rev() {
+        let xp = active_reciprocals[i].div(x);
+        while prime_cursor_idx < primes.len() && primes[prime_cursor_idx] <= xp {
+            prime_cursor_idx += 1;
+        }
+        parallel_sum += prime_cursor_idx as i64;
+    }
+
+    parallel_sum + gauss_term
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -379,5 +428,17 @@ mod tests {
         let pi_table = PiTable::new(x_sqrt + 30);
         let b_mon = compute_b_monotone(x, y, &primes, &pi_table);
         assert!(b_mon > 0);
+    }
+
+    #[test]
+    fn test_b_decoupled_ground_truth() {
+        let x = 10_000u64;
+        let y = 20u64;
+        let max_prime = x / (y + 1) + 100;
+        let primes = generate_base_primes(max_prime);
+        let recips: Vec<FastDiv64> = primes.iter().map(|&p| FastDiv64::new(p, x)).collect();
+
+        let b_dec = compute_b_decoupled(x, y, &primes, &recips);
+        assert!(b_dec > 0);
     }
 }

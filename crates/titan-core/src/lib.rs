@@ -16,3 +16,4 @@ pub mod redshift_pool;
 pub mod huge_alloc;
 pub mod telemetry;
 pub mod autotuner;
+pub mod stage_ectomy;

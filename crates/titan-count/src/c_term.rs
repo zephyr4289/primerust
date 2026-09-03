@@ -30,6 +30,9 @@ impl EasyLeavesC {
         let max_prime_idx = primes[1..].partition_point(|&p| p <= y) + 1;
         let mut total_c: i64 = 0;
 
+        let div_table = crate::magic_reciprocal::FastDivTable::build(primes, x);
+        let div_slice = div_table.as_slice();
+
         // DFS stack generating square-free integers m <= y
         // Tuple: (m, lpf_idx, mpf_idx, mu)
         let mut stack = Vec::with_capacity(64);
@@ -64,7 +67,8 @@ impl EasyLeavesC {
                         let p = primes[p_idx];
                         if p > sqrt_x_m { break; }
 
-                        let v = x_m / p;
+                        let d = unsafe { div_slice.get_unchecked(p_idx) };
+                        let v = d.div(x_m);
                         let pi_v = if v <= pi_table.max_y {
                             pi_table.pi(v) as i64
                         } else {
@@ -118,6 +122,9 @@ impl EasyLeavesC {
         let next_root = AtomicUsize::new(1);
         let mut thread_sums = vec![0i64; num_threads];
 
+        let div_table = crate::magic_reciprocal::FastDivTable::build(primes, x);
+        let div_slice = div_table.as_slice();
+
         std::thread::scope(|s| {
             for sum_ref in thread_sums.iter_mut() {
                 let next_ref = &next_root;
@@ -163,7 +170,8 @@ impl EasyLeavesC {
                                         let p = primes[p_idx];
                                         if p > sqrt_x_m { break; }
 
-                                        let v = x_m / p;
+                                        let d = unsafe { div_slice.get_unchecked(p_idx) };
+                                        let v = d.div(x_m);
                                         let pi_v = if v <= pi_table.max_y {
                                             pi_table.pi(v) as i64
                                         } else {

@@ -16,6 +16,7 @@ pub mod dense_popcount_neon;
 pub mod erat_big;
 pub mod erat_medium;
 pub mod erat_small;
+pub mod factor_table;
 pub mod kernels;
 pub mod l1_popcount;
 pub mod mark64;
@@ -33,6 +34,8 @@ pub mod wheel30_popcount;
 pub mod wheel30_tiny;
 pub mod frontier_ring;
 pub mod wheel210;
+pub mod wheel30_paced_asm;
+pub mod wheel210_stealer;
 
 pub const DEFAULT_SEGMENT_SIZE: usize = 32768; // 32 KiB L1D optimum on SM4450 (A78 & A55)
 

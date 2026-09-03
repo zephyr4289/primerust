@@ -69,18 +69,27 @@ fn run_ultra_scale(x: u64, expected: u64) {
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let run_17 = !args.iter().any(|a| a == "1e18" || a == "18");
+    let run_18 = !args.iter().any(|a| a == "1e17" || a == "17");
+
     println!("══════════════════════════════════════════════════════════════════════════════════════════════════");
-    println!("ULTRA-SCALE BATTLE (10^17 & 10^18): TITAN vs KIM WALISCH's PRIMECOUNT 8.1");
+    println!("ULTRA-SCALE BATTLE: TITAN vs KIM WALISCH's PRIMECOUNT 8.1");
     println!("Silicon Platform: Qualcomm Snapdragon 4 Gen 2 (SM4450 | 2x Cortex-A78 + 6x Cortex-A55)");
     println!("Threads: 8 (Heterogeneous Big.LITTLE DynamIQ)");
     println!("══════════════════════════════════════════════════════════════════════════════════════════════════\n");
 
-    // Scale 10^17: 2,623,557,157,654,233
-    run_ultra_scale(100_000_000_000_000_000, 2_623_557_157_654_233);
+    if run_17 {
+        // Scale 10^17: 2,623,557,157,654,233
+        run_ultra_scale(100_000_000_000_000_000, 2_623_557_157_654_233);
+        if run_18 {
+            println!("\nAllowing passive heatsink cooldown (30 seconds)...");
+            std::thread::sleep(std::time::Duration::from_secs(30));
+        }
+    }
 
-    println!("\nAllowing passive heatsink cooldown (30 seconds)...");
-    std::thread::sleep(std::time::Duration::from_secs(30));
-
-    // Scale 10^18: 24,739,954,287,740,860
-    run_ultra_scale(1_000_000_000_000_000_000, 24_739_954_287_740_860);
+    if run_18 {
+        // Scale 10^18: 24,739,954,287,740,860
+        run_ultra_scale(1_000_000_000_000_000_000, 24_739_954_287_740_860);
+    }
 }
