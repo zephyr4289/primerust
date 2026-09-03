@@ -135,10 +135,15 @@ impl LehmerCounter {
         primes.push(0);
         primes.extend_from_slice(&base_primes);
 
-        let a = match primes[1..].binary_search(&x_root4) {
-            Ok(idx) => idx + 1,
-            Err(idx) => idx,
+        let alpha_p_a = if x >= 10_000_000_000_000 {
+            6000u64
+        } else if x >= 1_000_000_000_000 {
+            2200u64
+        } else {
+            x_root4
         };
+
+        let a = primes[1..].partition_point(|&p| p <= alpha_p_a);
         let b = match primes[1..].binary_search(&x_sqrt) {
             Ok(idx) => idx + 1,
             Err(idx) => idx,

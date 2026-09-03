@@ -43,6 +43,11 @@ pub fn generate_base_primes(limit: u64) -> Vec<u64> {
     primes
 }
 
+/// Generates all primes <= limit as u32.
+pub fn generate_base_primes_u32(limit: u32) -> Vec<u32> {
+    generate_base_primes(limit as u64).into_iter().map(|p| p as u32).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

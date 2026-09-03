@@ -1,12 +1,44 @@
-//! Phase 31: L1-Locked Σ-Terms Engine (SigmaL1).
+//! Phase 31 & Phase 2.2: L1-Locked Σ-Terms Engine (SigmaL1).
 //!
 //! Evaluates small prime leaves and boundary summations Sigma1..Sigma7 with:
 //! 1. 5 KiB static L1D cache-locked tables.
 //! 2. Inlined const-eval closed forms for Sigma5, Sigma6, Sigma7.
-//! 3. Branchless cumulative totient indexing.
+//! 3. Monotone two-pointer walk for Sigma(x, y) per Phase 2.2.
 
 use titan_core::phi_tiny::{phi5, phi6, phi7, phi_tiny};
 use crate::pi_table::PiTable;
+
+/// Monotone Two-Pointer Walk for Sigma(x, y) per Phase 2.2 specification
+pub fn sigma_gourdon(x: u64, y: u64, primes: &[u64], pi_table: &PiTable) -> i128 {
+    let p_cutoff = 13u64; // Primes <= 13 absorbed into Phi0 wheel totient
+    let start_idx = primes.iter().position(|&p| p > p_cutoff).unwrap_or(1);
+    let end_idx = primes.iter().position(|&p| p > y).unwrap_or(primes.len() - 1);
+
+    if start_idx > end_idx {
+        return 0;
+    }
+
+    let mut sum = 0i128;
+    let max_table_y = pi_table.max_y;
+    let mut rolling_prime_idx = primes.len() - 1;
+
+    for i in start_idx..=end_idx {
+        let p = primes[i];
+        let quotient = x / p;
+
+        if quotient <= max_table_y {
+            // Direct L1-cached pi lookup
+            sum += pi_table.pi(quotient) as i128;
+        } else {
+            // Downward rolling prime pointer
+            while rolling_prime_idx > 0 && primes[rolling_prime_idx] > quotient {
+                rolling_prime_idx -= 1;
+            }
+            sum += rolling_prime_idx as i128;
+        }
+    }
+    sum
+}
 
 /// L1D-locked Sigma Evaluator for Gourdon / Deleglise-Rivat leaves.
 pub struct SigmaL1;
@@ -24,7 +56,13 @@ impl SigmaL1 {
         let mut sum = 0i128;
         for i in 1..=a {
             let p = primes[i];
-            sum += pi_table.pi(x / p) as i128;
+            let q = x / p;
+            if q <= pi_table.max_y {
+                sum += pi_table.pi(q) as i128;
+            } else {
+                let idx = primes[1..].partition_point(|&pr| pr <= q);
+                sum += idx as i128;
+            }
         }
         sum
     }
@@ -88,5 +126,19 @@ mod tests {
 
         let s1 = SigmaL1::sigma1(x, a, &primes, &pi_table);
         assert!(s1 > 0);
+    }
+
+    #[test]
+    fn test_sigma_gourdon_basic() {
+        let x = 100_000u64;
+        let y = 100u64;
+
+        let base_primes = generate_base_primes(1000);
+        let mut primes = vec![0u64];
+        primes.extend_from_slice(&base_primes);
+
+        let pi_table = PiTable::new(1000);
+        let s = sigma_gourdon(x, y, &primes, &pi_table);
+        assert!(s >= 0);
     }
 }

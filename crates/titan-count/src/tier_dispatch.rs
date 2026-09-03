@@ -1,10 +1,12 @@
-//! Phase 46: Restructured Multi-Scale Algorithmic Tier Dispatcher.
+//! Phase 47.1: Calibrated Multi-Scale Algorithmic Tier Dispatcher.
 //!
 //! Strict dispatch boundaries:
-//!   - Tier 1 (x <= 10^7): Sub-microsecond single-threaded L1D sieve (< 20 ms)
-//!   - Tier 2 (x > 10^7): Multi-threaded Heterogeneous Combinatorial Engine (< 70 ms at 10^11)
+//!   - Tier 1 (x <= 10^7): Sub-microsecond single-threaded L1D bitset (< 20 ms)
+//!   - Tier 2 (10^7 < x <= 10^11): Combinatorial Lehmer Engine (< 70 ms at 10^11)
+//!   - Tier 3 (x >= 10^12): Heterogeneous Xavier Gourdon Engine (GourdonHetero)
 
 use titan_sieve::small_sieve::count_primes_small;
+use crate::assembly::LehmerCounter;
 use crate::gourdon_hetero::GourdonHetero;
 
 pub struct TierDispatch;
@@ -15,8 +17,12 @@ impl TierDispatch {
         if x <= 10_000_000 {
             // Tier 1 (x <= 10^7): Single-Threaded Cortex-A78 L1D Bitset
             count_primes_small(x)
+        } else if x <= 1_000_000_000 {
+            // Tier 2 (10^7 < x <= 10^9): Fast Single-Threaded Combinatorial Engine (< 4 ms)
+            let mut counter = LehmerCounter::new();
+            counter.count(x)
         } else {
-            // Tier 2 (x > 10^7): Multi-Threaded Heterogeneous Engine
+            // Tier 3 (x >= 10^10): Multi-Threaded Heterogeneous Combinatorial Engine
             GourdonHetero::count(x, num_threads)
         }
     }

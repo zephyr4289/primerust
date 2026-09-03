@@ -61,15 +61,19 @@ impl PhiEngine {
 
         while let Some((y, i, sign)) = self.stack.pop() {
             self.census.total_nodes += 1;
-            let cur_depth = self.stack.len() + 1;
-            if cur_depth > self.census.max_depth {
-                self.census.max_depth = cur_depth;
-            }
+            self.census.max_depth = self.census.max_depth.max(self.stack.len());
 
             if i <= 6 {
-                self.census.t1_exits += 1;
+                self.census.t0_exits += 1;
                 let val = phi_tiny(y, i as u64) as i64;
                 total += (sign as i64) * val;
+                continue;
+            }
+
+            let p_i = primes[i];
+            if y < p_i {
+                self.census.t1_exits += 1;
+                total += sign as i64;
                 continue;
             }
 
@@ -91,7 +95,77 @@ impl PhiEngine {
             // Push all right children along the collapsed spine
             for k in 7..=i {
                 let y_div = magic.div(y, k);
-                self.stack.push((y_div, k - 1, -sign));
+                let p_k = primes[k];
+                if y_div < p_k {
+                    self.census.t1_exits += 1;
+                    total += -sign as i64;
+                } else if y_div < p_k * p_k && y_div <= pi_table.max_y {
+                    self.census.t2_exits += 1;
+                    let pi_y = pi_table.pi(y_div) as i64;
+                    total += (-sign as i64) * (pi_y - (k as i64) + 2);
+                } else {
+                    self.stack.push((y_div, k - 1, -sign));
+                }
+            }
+        }
+
+        total
+    }
+
+    /// Fast evaluation with Left-Spine Collapse and borrowed Magic Division Table
+    #[inline(always)]
+    pub fn eval_with_magic(
+        &mut self,
+        x: u64,
+        a: usize,
+        primes: &[u64],
+        pi_table: &PiTable,
+        magic: &MagicDivTable,
+    ) -> i64 {
+        self.stack.clear();
+        if x == 0 || a == 0 {
+            return x as i64;
+        }
+
+        self.stack.push((x, a, 1));
+        let mut total = 0i64;
+
+        while let Some((y, i, sign)) = self.stack.pop() {
+            if i <= 6 {
+                let val = phi_tiny(y, i as u64) as i64;
+                total += (sign as i64) * val;
+                continue;
+            }
+
+            let p_i = primes[i];
+            if y < p_i {
+                total += sign as i64;
+                continue;
+            }
+
+            let next_p = primes[i + 1];
+            if y < next_p * next_p && y <= pi_table.max_y {
+                let pi_y = pi_table.pi(y) as i64;
+                total += (sign as i64) * (pi_y - (i as i64) + 1);
+                continue;
+            }
+
+            // Left-spine collapse:
+            // Evaluates leaf (y, 6) in O(1) via phi_tiny
+            let val = phi_tiny(y, 6) as i64;
+            total += (sign as i64) * val;
+
+            for k in 7..=i {
+                let y_div = magic.div(y, k);
+                let p_k = primes[k];
+                if y_div < p_k {
+                    total += -sign as i64;
+                } else if y_div < p_k * p_k && y_div <= pi_table.max_y {
+                    let pi_y = pi_table.pi(y_div) as i64;
+                    total += (-sign as i64) * (pi_y - (k as i64) + 2);
+                } else {
+                    self.stack.push((y_div, k - 1, -sign));
+                }
             }
         }
 
@@ -110,42 +184,10 @@ impl PhiEngine {
         if self.magic_table.as_ref().map_or(true, |m| m.len() < primes.len()) {
             self.magic_table = Some(MagicDivTable::new(primes));
         }
-        let magic = self.magic_table.as_ref().unwrap();
-
-        self.stack.clear();
-        if x == 0 || a == 0 {
-            return x as i64;
-        }
-
-        self.stack.push((x, a, 1));
-        let mut total = 0i64;
-
-        while let Some((y, i, sign)) = self.stack.pop() {
-            if i <= 6 {
-                let val = phi_tiny(y, i as u64) as i64;
-                total += (sign as i64) * val;
-                continue;
-            }
-
-            let next_p = primes[i + 1];
-            if y < next_p * next_p && y <= pi_table.max_y {
-                let pi_y = pi_table.pi(y) as i64;
-                total += (sign as i64) * (pi_y - (i as i64) + 1);
-                continue;
-            }
-
-            // Left-spine collapse:
-            // Evaluates leaf (y, 6) in O(1) via phi_tiny
-            let val = phi_tiny(y, 6) as i64;
-            total += (sign as i64) * val;
-
-            for k in 7..=i {
-                let y_div = magic.div(y, k);
-                self.stack.push((y_div, k - 1, -sign));
-            }
-        }
-
-        total
+        let magic = self.magic_table.take().unwrap();
+        let ans = self.eval_with_magic(x, a, primes, pi_table, &magic);
+        self.magic_table = Some(magic);
+        ans
     }
 }
 
@@ -191,6 +233,7 @@ pub fn eval_mt(
         for sum_ref in thread_sums.iter_mut() {
             let next_task_ref = &next_task;
             let subtrees_ref = &subtrees;
+            let magic_ref = &magic;
             s.spawn(move || {
                 let mut eng = PhiEngine::new();
                 let mut local_sum = 0i64;
@@ -201,7 +244,7 @@ pub fn eval_mt(
                         break;
                     }
                     let (y, k) = subtrees_ref[idx];
-                    let sub_val = eng.eval(y, k, primes, pi_table);
+                    let sub_val = eng.eval_with_magic(y, k, primes, pi_table, magic_ref);
                     local_sum -= sub_val; // Right-children have sign = -1
                 }
 
@@ -217,4 +260,3 @@ pub fn eval_mt(
 
     total
 }
-

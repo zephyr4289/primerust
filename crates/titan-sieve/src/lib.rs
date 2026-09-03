@@ -2,13 +2,17 @@
 
 pub mod adaptive_dispenser;
 pub mod arena;
+pub mod asymmetric_dispenser;
 pub mod b_carry;
 pub mod base;
+pub mod thread_local_acc;
 pub mod boot_wheel;
 pub mod bucket_sieve;
 pub mod count;
 pub mod count_resolve;
+pub mod csr_bucket;
 pub mod dense_popcount;
+pub mod dense_popcount_neon;
 pub mod erat_big;
 pub mod erat_medium;
 pub mod erat_small;
@@ -21,6 +25,14 @@ pub mod segment_dispenser;
 pub mod small_sieve;
 pub mod stream_pipeline;
 pub mod tally;
+pub mod wheel30;
+pub mod wheel30_dense;
+pub mod wheel30_medium;
+pub mod wheel30_sparse;
+pub mod wheel30_popcount;
+pub mod wheel30_tiny;
+pub mod frontier_ring;
+pub mod wheel210;
 
 pub const DEFAULT_SEGMENT_SIZE: usize = 32768; // 32 KiB L1D optimum on SM4450 (A78 & A55)
 

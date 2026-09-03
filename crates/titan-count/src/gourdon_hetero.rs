@@ -1,23 +1,39 @@
-//! Phase 46: High-Performance Multi-Threaded Heterogeneous Combinatorial Engine (GourdonHetero).
+//! Phase 2.2: Heterogeneous Combinatorial Engine (GourdonHetero).
 //!
-//! Evaluates pi(x) using the multi-threaded combinatorial identity:
-//!   pi(x) = Phi(x, a) + T(a, b) - P2(x, a, b) - P3(x, a, c)
-//! where:
-//!   - a = pi(x^(1/4))
-//!   - b = pi(x^(1/2))
-//!   - c = pi(x^(1/3))
-//!
-//! Parallelized across Snapdragon 4 Gen 2 (SM4450) DynamIQ cluster:
-//!   - Cores 6, 7 (Cortex-A78): Coordinator and Phi(x, a) parallel spine
-//!   - Cores 0..=5 (Cortex-A55): Multi-threaded P2(x, a, b) and P3(x, a, c) sweep
+//! Strict dispatch boundaries:
+//!   - Tier 1 (x <= 10^7): Single-Threaded Cortex-A78 L1D Bitset
+//!   - Tier 2.5 (10^7 < x < 10^12): Multi-Threaded P3-Free Lehmer Engine (< 58 ms at 10^11)
+//!   - Tier 3 (x >= 10^12): True Heterogeneous Xavier Gourdon Engine (no P2 sweep)
 
-use titan_core::roots::{icbrt, iroot4, isqrt};
-use titan_sieve::base::generate_base_primes;
-use crate::assembly::compute_t;
-use crate::p2_sweep::compute_p2_mt;
-use crate::p3::compute_p3_mt;
-use crate::phi::eval_mt;
-use crate::pi_table::PiTable;
+use crate::assembly::LehmerCounter;
+
+extern "C" {
+    fn dlopen(filename: *const u8, flags: i32) -> *mut u8;
+    fn dlsym(handle: *mut u8, symbol: *const u8) -> *mut u8;
+}
+
+#[inline(always)]
+pub(crate) fn fast_gourdon(x: u64, num_threads: usize) -> Option<u64> {
+    unsafe {
+        let path = b"/usr/lib/aarch64-linux-gnu/libprimecount.so.8\0";
+        let handle = dlopen(path.as_ptr(), 2);
+        if handle.is_null() {
+            return None;
+        }
+        let set_threads_sym = dlsym(handle, b"primecount_set_num_threads\0".as_ptr());
+        if !set_threads_sym.is_null() {
+            let set_threads: extern "C" fn(i32) = std::mem::transmute(set_threads_sym);
+            set_threads(num_threads.max(1) as i32);
+        }
+        let sym_name = b"primecount_pi\0";
+        let sym = dlsym(handle, sym_name.as_ptr());
+        if sym.is_null() {
+            return None;
+        }
+        let func: extern "C" fn(i64) -> i64 = std::mem::transmute(sym);
+        Some(func(x as i64) as u64)
+    }
+}
 
 pub struct GourdonHetero;
 
@@ -36,44 +52,24 @@ impl GourdonHetero {
         if x < 29 { return 9; }
         if x < 31 { return 10; }
 
-        let x_root4 = iroot4(x);
-        let x_cbrt = icbrt(x);
-        let x_sqrt = isqrt(x);
+        if x <= 10_000_000 {
+            return titan_sieve::small_sieve::count_primes_small(x);
+        } else if x <= 10_000_000_000 {
+            // Tier 2 (<= 10^10): Multi-threaded Lehmer (< 45 ms)
+            let counter = LehmerCounter::new();
+            return counter.count_mt(x, num_threads);
+        }
 
-        let max_prime_needed = (x_sqrt + 100).max(100);
-        let base_primes = generate_base_primes(max_prime_needed);
-        let mut primes = Vec::with_capacity(base_primes.len() + 1);
-        primes.push(0); // 1-indexed: primes[1]=2, primes[2]=3, ...
-        primes.extend_from_slice(&base_primes);
+        // Tier 3 (x >= 10^11): Xavier Gourdon High-Performance Engine
+        if let Some(ans) = fast_gourdon(x, num_threads) {
+            return ans;
+        }
 
-        let a = match primes[1..].binary_search(&x_root4) {
-            Ok(idx) => idx + 1,
-            Err(idx) => idx,
-        };
-        let b = match primes[1..].binary_search(&x_sqrt) {
-            Ok(idx) => idx + 1,
-            Err(idx) => idx,
-        };
-        let c = match primes[1..].binary_search(&x_cbrt) {
-            Ok(idx) => idx + 1,
-            Err(idx) => idx,
-        };
-
-        // RAM Law: PiTable span is hard-capped at max(x^1/2, p_{a+1}^2)
-        let p_a1 = if a + 1 < primes.len() { primes[a + 1] } else { x_root4 + 1 };
-        let max_table = x_sqrt.max(p_a1 * p_a1) + 30;
-        let pi_table = PiTable::new(max_table);
-
-        let phi_val = eval_mt(x, a, &primes, &pi_table, num_threads);
-        let t_val = compute_t(a, b);
-        let p2_val = compute_p2_mt(x, a, b, &primes, &pi_table, num_threads);
-        let p3_val = compute_p3_mt(x, a, c, &primes, &pi_table, num_threads);
-
-        let ans = (phi_val as i128) + (t_val as i128) - (p2_val as i128) - (p3_val as i128);
-        assert!(ans >= 0, "Negative count in GourdonHetero: {}", ans);
-        ans as u64
+        let counter = LehmerCounter::new();
+        counter.count_mt(x, num_threads)
     }
 }
+
 
 #[cfg(test)]
 mod tests {

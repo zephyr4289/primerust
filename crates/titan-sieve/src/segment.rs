@@ -400,8 +400,15 @@ pub fn count_primes_range_with_thresholds(
             let lo_byte = ((lo - cur_seg_low) / 30) as usize;
             let lo_rem = (lo % 30) as u8;
             let mut count_before = 0u64;
-            for b in 0..lo_byte {
+            let mut b = 0usize;
+            while b + 8 <= lo_byte {
+                let word = u64::from_le_bytes(arena.segment_buf[b..b + 8].try_into().unwrap());
+                count_before += word.count_ones() as u64;
+                b += 8;
+            }
+            while b < lo_byte {
                 count_before += arena.segment_buf[b].count_ones() as u64;
+                b += 1;
             }
             let mut mask = 0u8;
             for r in 0..8 {
@@ -429,7 +436,12 @@ pub fn count_primes_range_with_thresholds(
             let target_byte = ((t - cur_seg_low) / 30) as usize;
             let target_rem = (t % 30) as u8;
 
-            // Advance intra_walk_sum up to target_byte
+            // Advance intra_walk_sum up to target_byte using 64-bit word popcounts
+            while cur_walk_byte + 8 <= target_byte {
+                let word = u64::from_le_bytes(arena.segment_buf[cur_walk_byte..cur_walk_byte + 8].try_into().unwrap());
+                intra_walk_sum += word.count_ones() as u64;
+                cur_walk_byte += 8;
+            }
             while cur_walk_byte < target_byte {
                 intra_walk_sum += arena.segment_buf[cur_walk_byte].count_ones() as u64;
                 cur_walk_byte += 1;

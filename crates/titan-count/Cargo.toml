@@ -100,3 +100,8 @@ path = "src/bin/frozen_probe.rs"
 [[bin]]
 name = "census_v4"
 path = "src/bin/census_v4.rs"
+
+[[bin]]
+name = "head_to_head_ultra"
+path = "src/bin/head_to_head_ultra.rs"
+
