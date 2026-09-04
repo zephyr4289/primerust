@@ -42,6 +42,7 @@ impl GourdonCounter {
 
         let x_cbrt = icbrt(x);
         let x_sqrt = isqrt(x);
+        println!("[TITAN-GOURDON-COUNTER] Notice: GourdonCounter::eval_mt is executing LehmerCounter MT (x = {})", x);
         let ans = crate::assembly::LehmerCounter::new().count_mt(x, num_threads);
         let v_horizon = x / x_cbrt;
         let blocks = ((v_horizon.saturating_sub(x_sqrt) + 65535) / 65536) as usize;

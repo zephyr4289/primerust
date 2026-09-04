@@ -1,12 +1,14 @@
-//! Phase 8.3: Dual-A78 Concurrent ILP-4 AC Engine (ac_parallel_v2.rs).
+//! Phase 8.3 & Phase 8.4.4: Dual-A78 Concurrent ILP-4 AC Engine + A(x, y) formula.
 //!
 //! Re-wires the lock-free AcWorkQueue so both Cortex-A78 cores run the 4-way ILP
-//! unrolled reciprocal loop in parallel.
+//! unrolled reciprocal loop in parallel, plus evaluates the missing A(x, y) analytical leaves.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use crate::magic_reciprocal::FastDiv64;
+use crate::pi_table::PiTable;
 use crate::segmented_pi::SegmentedPiTable;
-use titan_core::roots::isqrt;
+use titan_core::roots::{icbrt, isqrt};
+use crate::sigma_l1::get_x_star_gourdon;
 
 pub struct AcWorkQueue {
     current_m: AtomicU64,
@@ -29,7 +31,6 @@ impl AcWorkQueue {
                 return None;
             }
             let remaining = self.y - curr + 1;
-            // Dynamic guided chunking: large chunks when m is large (few leaves per m)
             let step = (remaining / 64).clamp(16, 4096);
             let next = (curr + step).min(self.y + 1);
 
@@ -86,12 +87,11 @@ pub fn compute_ac_range_ilp4(
         let mut sub_sum: i64 = 0;
         let mut idx = p_start_idx;
 
-        // 4-Way Pipelined Reciprocal Execution (Dual-Issue UMULH + LDP)
         while idx + 4 <= p_end_idx {
-            let r0 = unsafe { *reciprocals.get_unchecked(idx) };
-            let r1 = unsafe { *reciprocals.get_unchecked(idx + 1) };
-            let r2 = unsafe { *reciprocals.get_unchecked(idx + 2) };
-            let r3 = unsafe { *reciprocals.get_unchecked(idx + 3) };
+            let r0 = unsafe { reciprocals.get_unchecked(idx) };
+            let r1 = unsafe { reciprocals.get_unchecked(idx + 1) };
+            let r2 = unsafe { reciprocals.get_unchecked(idx + 2) };
+            let r3 = unsafe { reciprocals.get_unchecked(idx + 3) };
 
             let v0 = r0.div(x_div_m);
             let v1 = r1.div(x_div_m);
@@ -128,4 +128,136 @@ pub fn compute_ac_range_ilp4(
     }
 
     chunk_sum
+}
+
+/// Evaluates the genuine Xavier Gourdon A(x, y) formula across range b in (pi(x_star), pi(x^(1/3))]
+pub fn compute_a_formula(
+    x: u64,
+    y: u64,
+    primes: &[u64],
+    pi_table: &PiTable,
+) -> i64 {
+    let x_cbrt = icbrt(x);
+    let x_star = get_x_star_gourdon(x, y);
+    let has_sentinel = primes.first() == Some(&0);
+    let prime_slice = if has_sentinel { &primes[1..] } else { primes };
+
+    let min_b = prime_slice.partition_point(|&p| p <= x_star);
+    let max_b = prime_slice.partition_point(|&p| p <= x_cbrt);
+
+    if min_b >= max_b {
+        return 0;
+    }
+
+    let mut sum: i64 = 0;
+
+    for b in min_b..max_b {
+        let prime = prime_slice[b];
+        let xp = x / prime;
+        let sqrt_xp = isqrt(xp);
+
+        let min_q = prime;
+        let max_q = sqrt_xp;
+
+        if min_q >= max_q {
+            continue;
+        }
+
+        let mut i = prime_slice.partition_point(|&p| p <= min_q);
+        let max_i1 = prime_slice.partition_point(|&p| p <= (xp / y).min(max_q));
+        let max_i2 = prime_slice.partition_point(|&p| p <= max_q);
+
+        // Leaves where x / (p * q) >= y (Weight 1)
+        while i < max_i1 {
+            let q = prime_slice[i];
+            let xpq = xp / q;
+            sum += pi_table.pi(xpq) as i64;
+            i += 1;
+        }
+
+        // Leaves where x / (p * q) < y (Weight 2 — Symmetry Multiplier)
+        while i < max_i2 {
+            let q = prime_slice[i];
+            let xpq = xp / q;
+            sum += (pi_table.pi(xpq) as i64) * 2;
+            i += 1;
+        }
+    }
+
+    sum
+}
+
+/// Evaluates C2 leaves for b in (pi(sqrt(z)), pi(x_star)]
+pub fn compute_c2_formula(
+    x: u64,
+    y: u64,
+    z: u64,
+    primes: &[u64],
+    pi_table: &PiTable,
+) -> i64 {
+    let x_star = isqrt(x / y);
+    let sqrt_z = isqrt(z);
+    let has_sentinel = primes.first() == Some(&0);
+    let prime_slice = if has_sentinel { &primes[1..] } else { primes };
+
+    let min_b = prime_slice.partition_point(|&p| p <= sqrt_z);
+    let max_b = prime_slice.partition_point(|&p| p <= x_star);
+
+    if min_b >= max_b {
+        return 0;
+    }
+
+    let mut sum: i64 = 0;
+
+    for b in min_b..max_b {
+        let prime = prime_slice[b];
+        let xp = x / prime;
+        let sqrt_xp = isqrt(xp);
+
+        let min_q = prime.max(z / prime);
+        let max_q = (xp / prime).min(y);
+
+        if min_q >= max_q {
+            continue;
+        }
+
+        let mut i = prime_slice.partition_point(|&p| p <= min_q);
+        let max_i = prime_slice.partition_point(|&p| p <= max_q);
+
+        let b_1based = (b + 1) as i64;
+        while i < max_i {
+            let q = prime_slice[i];
+            let xpq = xp / q;
+            let phi_xpq = (pi_table.pi(xpq) as i64) - b_1based + 2;
+            sum += phi_xpq;
+            i += 1;
+        }
+    }
+
+    sum
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use titan_sieve::base::generate_base_primes;
+
+    #[test]
+    fn test_a_formula_e13() {
+        let x = 10_000_000_000_000u64;
+        let y = 103_411u64;
+        let max_v = x / y;
+        let base_primes = generate_base_primes(max_v.min(10_000_000));
+        let mut primes = vec![0u64];
+        primes.extend_from_slice(&base_primes);
+
+        let pi_table = PiTable::new(max_v);
+        let a_val = compute_a_formula(x, y, &primes, &pi_table);
+        println!("Computed A(1e13) = {}", a_val);
+        assert!(a_val > 0, "A(1e13) must be positive");
+
+        let z = 170_628u64;
+        let c2_val = compute_c2_formula(x, y, z, &primes, &pi_table);
+        println!("Computed C2(1e13) = {}", c2_val);
+    }
 }

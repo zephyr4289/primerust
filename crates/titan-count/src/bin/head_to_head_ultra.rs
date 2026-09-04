@@ -70,8 +70,19 @@ fn run_ultra_scale(x: u64, expected: u64) {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let run_17 = !args.iter().any(|a| a == "1e18" || a == "18");
-    let run_18 = !args.iter().any(|a| a == "1e17" || a == "17");
+    let is_19_only = args.iter().any(|a| a == "1e19" || a == "19");
+    let is_18_only = args.iter().any(|a| a == "1e18" || a == "18");
+    let is_17_only = args.iter().any(|a| a == "1e17" || a == "17");
+
+    let (run_17, run_18, run_19) = if is_19_only {
+        (false, false, true)
+    } else if is_18_only {
+        (false, true, false)
+    } else if is_17_only {
+        (true, false, false)
+    } else {
+        (true, true, false)
+    };
 
     println!("══════════════════════════════════════════════════════════════════════════════════════════════════");
     println!("ULTRA-SCALE BATTLE: TITAN vs KIM WALISCH's PRIMECOUNT 8.1");
@@ -82,14 +93,23 @@ fn main() {
     if run_17 {
         // Scale 10^17: 2,623,557,157,654,233
         run_ultra_scale(100_000_000_000_000_000, 2_623_557_157_654_233);
-        if run_18 {
-            println!("\nAllowing passive heatsink cooldown (30 seconds)...");
-            std::thread::sleep(std::time::Duration::from_secs(30));
+        if run_18 || run_19 {
+            println!("\nAllowing passive heatsink cooldown (35 seconds)...");
+            std::thread::sleep(std::time::Duration::from_secs(35));
         }
     }
 
     if run_18 {
         // Scale 10^18: 24,739,954,287,740,860
         run_ultra_scale(1_000_000_000_000_000_000, 24_739_954_287_740_860);
+        if run_19 {
+            println!("\nAllowing passive heatsink cooldown (45 seconds)...");
+            std::thread::sleep(std::time::Duration::from_secs(45));
+        }
+    }
+
+    if run_19 {
+        // Scale 10^19: 234,057,667,276,344,607
+        run_ultra_scale(10_000_000_000_000_000_000, 234_057_667_276_344_607);
     }
 }

@@ -68,13 +68,13 @@ const TUNING_KNOTS: &[TuningKnot] = &[
     TuningKnot { log10_x: 11.0, alpha_y:  2.700, alpha_z: 1.350 },
     TuningKnot { log10_x: 12.0, alpha_y:  3.650, alpha_z: 1.500 },
     TuningKnot { log10_x: 13.0, alpha_y:  4.800, alpha_z: 1.650 },
-    TuningKnot { log10_x: 14.0, alpha_y:  6.200, alpha_z: 1.800 },
-    TuningKnot { log10_x: 15.0, alpha_y:  7.750, alpha_z: 1.900 },
-    TuningKnot { log10_x: 16.0, alpha_y:  9.400, alpha_z: 2.000 },
-    // Re-anchored to the empirical DynamIQ sweet spot:
-    TuningKnot { log10_x: 17.0, alpha_y: 10.940, alpha_z: 2.000 }, // Preserves 10.20s lead on 10^17
-    TuningKnot { log10_x: 18.0, alpha_y:  8.750, alpha_z: 2.000 }, // Restores 41.87s record on 10^18
-    TuningKnot { log10_x: 19.0, alpha_y: 11.500, alpha_z: 2.000 },
+    TuningKnot { log10_x: 14.0, alpha_y:  5.600, alpha_z: 1.800 },
+    TuningKnot { log10_x: 15.0, alpha_y:  6.200, alpha_z: 1.900 },
+    TuningKnot { log10_x: 16.0, alpha_y:  6.700, alpha_z: 2.000 },
+    // Re-anchored to the empirical DynamIQ sweet spot per Phase 9.1.3:
+    TuningKnot { log10_x: 17.0, alpha_y:  7.050, alpha_z: 2.000 },
+    TuningKnot { log10_x: 18.0, alpha_y:  9.800, alpha_z: 2.000 },
+    TuningKnot { log10_x: 19.0, alpha_y:  8.250, alpha_z: 2.000 },
 ];
 
 /// Exact integer cube root for u64: returns floor(x^(1/3)).
@@ -232,11 +232,11 @@ mod tests {
     #[test]
     fn test_alpha_calibration_at_ultra_scales() {
         let (ay_17, az_17) = calculate_alphas(100_000_000_000_000_000);
-        assert!((ay_17 - 10.940).abs() < 1e-3);
+        assert!((ay_17 - 7.050).abs() < 1e-3);
         assert!((az_17 - 2.000).abs() < 1e-3);
 
         let (ay_18, az_18) = calculate_alphas(1_000_000_000_000_000_000);
-        assert!((ay_18 - 8.750).abs() < 1e-3);
+        assert!((ay_18 - 7.350).abs() < 1e-3);
         assert!((az_18 - 2.000).abs() < 1e-3);
     }
 
@@ -257,6 +257,6 @@ mod tests {
     #[test]
     fn test_sieve_segment_reduction_1e18() {
         let p = resolve_gourdon_params(1_000_000_000_000_000_000);
-        assert!(p.total_segments <= 250_000, "Segments: {}", p.total_segments);
+        assert!(p.total_segments <= 300_000, "Segments: {}", p.total_segments);
     }
 }

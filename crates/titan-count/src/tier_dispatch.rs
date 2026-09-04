@@ -12,17 +12,26 @@ use crate::gourdon_hetero::GourdonHetero;
 pub struct TierDispatch;
 
 impl TierDispatch {
-    /// Evaluates pi(x) using the optimal multi-scale tier engine
+    /// Evaluates pi(x) using the optimal multi-scale tier engine with transparent execution tracing.
     pub fn count(x: u64, num_threads: usize) -> u64 {
         if x <= 10_000_000 {
             // Tier 1 (x <= 10^7): Single-Threaded Cortex-A78 L1D Bitset
+            println!("[TITAN-DISPATCH] Tier 1: Single-Threaded Cortex-A78 L1D Bitset (x = {})", x);
             count_primes_small(x)
-        } else if x <= 1_000_000_000 {
-            // Tier 2 (10^7 < x <= 10^9): Fast Single-Threaded Combinatorial Engine (< 4 ms)
-            let mut counter = LehmerCounter::new();
-            counter.count(x)
+        } else if x < 10_000_000_000_000 {
+            // Tier 2 (10^7 < x < 1e13): Combinatorial Lehmer Engine
+            if x <= 1_000_000_000 {
+                println!("[TITAN-DISPATCH] Tier 2: Single-Threaded Combinatorial Lehmer (x = {})", x);
+                let mut counter = LehmerCounter::new();
+                counter.count(x)
+            } else {
+                println!("[TITAN-DISPATCH] Tier 2: Multi-Threaded Combinatorial Lehmer (x = {}, threads = {})", x, num_threads);
+                let counter = LehmerCounter::new();
+                counter.count_mt(x, num_threads)
+            }
         } else {
-            // Tier 3 (x >= 10^10): Multi-Threaded Heterogeneous Combinatorial Engine
+            // Tier 3 (x >= 1e13): Heterogeneous Xavier Gourdon Engine
+            println!("[TITAN-DISPATCH] Tier 3: Heterogeneous Xavier Gourdon Engine (x = {}, threads = {})", x, num_threads);
             GourdonHetero::count(x, num_threads)
         }
     }

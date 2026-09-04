@@ -15,6 +15,7 @@ pub mod assembly;
 pub mod asymmetric_handoff;
 pub mod asymmetric_handoff_v2;
 pub mod asymmetric_handoff_v3;
+pub mod asymmetric_handoff_v4;
 pub mod b_monotone;
 pub mod b_term;
 pub mod b_term_parallel;

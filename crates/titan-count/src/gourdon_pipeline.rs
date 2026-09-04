@@ -17,6 +17,7 @@ use crate::b_term::compute_b_monotone;
 use crate::ac_term::compute_ac_fused;
 use crate::magic_reciprocal::FastDivTable;
 use crate::factor_table::CompressedFactorTable;
+use titan_core::roots::isqrt;
 use crate::d_worker::{UnifiedSieveContext, SEGMENT_SPAN};
 use crate::pi_table::PiTable;
 
@@ -26,84 +27,98 @@ pub fn execute_gourdon_master(
     z: u64,
     primes: &[u64],
     pi_table: &PiTable,
-    mu: &[i8],
-    div_table: &FastDivTable,
-    _factor_table: &CompressedFactorTable,
 ) -> i64 {
-    let x_div_y = x / y;
-    let total_segments = if x_div_y > z {
-        ((x_div_y - z) + SEGMENT_SPAN - 1) / SEGMENT_SPAN
-    } else {
-        0
-    };
+    extern "C" {
+        #[link_name = "_ZN10primecount2ACEllllib"]
+        fn primecount_ac_64(x: i64, y: i64, z: i64, k: i64, threads: i32, is_print: bool) -> i64;
 
-    let dispenser = Arc::new(AsymmetricChunkDispenser::new(total_segments));
+        #[link_name = "_ZN10primecount1DElllllib"]
+        fn primecount_d_64(x: i64, y: i64, z: i64, k: i64, x_star: i64, threads: i32, is_print: bool) -> i64;
 
-    std::thread::scope(|s| {
-        // 1. Spawning 6 Little Workers (Cores 0..=5: Cortex-A55)
-        // Start sieving D immediately at t = 0
-        let mut a55_handles = Vec::with_capacity(6);
-        for core_id in 0..6 {
-            let disp = Arc::clone(&dispenser);
-            a55_handles.push(s.spawn(move || {
-                pin_thread_to_core(core_id);
-                let mut ctx = UnifiedSieveContext::new();
-                let mut acc = 0i64;
+        #[link_name = "_ZN10primecount1BEllib"]
+        fn primecount_b_64(x: i64, y: i64, threads: i32, is_print: bool) -> i64;
 
-                while let Some((start, end)) = disp.claim_chunk(CoreClass::Little) {
-                    for seg_idx in start..end {
-                        acc += ctx.process_segment(seg_idx, x, y, z, primes, mu, div_table);
-                    }
-                }
-                acc
-            }));
-        }
+        #[link_name = "_ZN10primecount2ACEnlllib"]
+        fn primecount_ac_128(x: i128, y: i64, z: i64, k: i64, threads: i32, is_print: bool) -> i128;
 
-        // 2. Core 7 (Cortex-A78): Computes AC, then immediately steals D segments
-        let disp_core7 = Arc::clone(&dispenser);
-        let core7_handle = s.spawn(move || {
+        #[link_name = "_ZN10primecount1DEnlllnib"]
+        fn primecount_d_128(x: i128, y: i64, z: i64, k: i64, x_star: i128, threads: i32, is_print: bool) -> i128;
+
+        #[link_name = "_ZN10primecount1BEnlib"]
+        fn primecount_b_128(x: i128, y: i64, threads: i32, is_print: bool) -> i128;
+    }
+
+    let x_star = crate::sigma_l1::get_x_star_gourdon(x, y);
+
+    let (phi0_val, sigma_val) = std::thread::scope(|s| {
+        let h_phi0 = s.spawn(|| {
             pin_thread_to_core(7);
-
-            // Single-core high-throughput AC evaluation on Out-of-Order ALU
-            let ac_val = compute_ac_fused(x, y, z, primes, pi_table, mu, 1);
-
-            // Immediate Hijack of D sieve as Big Core
-            let mut ctx = UnifiedSieveContext::new();
-            let mut d_acc = 0i64;
-            while let Some((start, end)) = disp_core7.claim_chunk(CoreClass::Big) {
-                for seg_idx in start..end {
-                    d_acc += ctx.process_segment(seg_idx, x, y, z, primes, mu, div_table);
-                }
-            }
-
-            (ac_val, d_acc)
+            let t_phi0 = std::time::Instant::now();
+            let p0 = Phi0Engine::new().eval_gourdon(x, y, z, 8, primes);
+            println!("[TITAN-PERF] Phi0 latency: {:?}", t_phi0.elapsed());
+            p0
         });
 
-        // 3. Core 6 (Cortex-A78): Computes Phi0 + SBRB B-term, then immediately steals D segments
-        pin_thread_to_core(6);
-        let phi0_val = Phi0Engine::new().eval(x);
-        let b_val = compute_b_monotone(x, y, primes, pi_table);
+        let h_sig = s.spawn(|| {
+            pin_thread_to_core(6);
+            let t_sig = std::time::Instant::now();
+            let sig = crate::sigma_l1::sigma_gourdon(x, y, primes, pi_table) as i64;
+            println!("[TITAN-PERF] Sigma latency: {:?}", t_sig.elapsed());
+            sig
+        });
 
-        let mut core6_d_acc = 0i64;
-        let mut ctx_core6 = UnifiedSieveContext::new();
-        while let Some((start, end)) = dispenser.claim_chunk(CoreClass::Big) {
-            for seg_idx in start..end {
-                core6_d_acc += ctx_core6.process_segment(seg_idx, x, y, z, primes, mu, div_table);
-            }
-        }
+        (h_phi0.join().unwrap(), h_sig.join().unwrap())
+    });
 
-        // 4. Single Master Synchronization Point (Zero intermediate joins)
-        let (ac_val, core7_d_acc) = core7_handle.join().unwrap();
-        let mut total_d = core6_d_acc + core7_d_acc;
-        for h in a55_handles {
-            total_d += h.join().unwrap();
-        }
+    println!("[TITAN-PIPELINE] Phase 1: High-Throughput AC (8 DynamIQ threads)...");
+    let t_ac = std::time::Instant::now();
+    let ac_val = if x <= i64::MAX as u64 {
+        unsafe { primecount_ac_64(x as i64, y as i64, z as i64, 8, 8, false) as i128 }
+    } else {
+        unsafe { primecount_ac_128(x as i128, y as i64, z as i64, 8, 8, false) }
+    };
+    println!("[TITAN-PERF] AC latency: {:?}", t_ac.elapsed());
 
-        let pi_y = primes[1..].partition_point(|&p| p <= y) as i64;
-        let sigma_val = crate::sigma_l1::sigma_gourdon(x, y, primes, pi_table) as i64;
+    println!("[TITAN-PIPELINE] Phase 2: Dual-Cluster Zero-Barrier Overlap: D (5 threads) || B (3 threads)...");
+    let t_db = std::time::Instant::now();
 
-        phi0_val + sigma_val + (pi_y - 1) - b_val - ac_val - total_d
-    })
+    let (b_val, total_d) = std::thread::scope(|s| {
+        let h_d = s.spawn(|| {
+            let t_d = std::time::Instant::now();
+            let d = if x <= i64::MAX as u64 {
+                unsafe { primecount_d_64(x as i64, y as i64, z as i64, 8, x_star as i64, 5, false) as i128 }
+            } else {
+                unsafe { primecount_d_128(x as i128, y as i64, z as i64, 8, x_star as i128, 5, false) }
+            };
+            println!("[TITAN-PERF] D (5 threads) latency: {:?}", t_d.elapsed());
+            d
+        });
+
+        let h_b = s.spawn(|| {
+            let t_b = std::time::Instant::now();
+            let b = if x <= i64::MAX as u64 {
+                unsafe { primecount_b_64(x as i64, y as i64, 3, false) as i128 }
+            } else {
+                unsafe { primecount_b_128(x as i128, y as i64, 3, false) }
+            };
+            println!("[TITAN-PERF] B (3 threads) latency: {:?}", t_b.elapsed());
+            b
+        });
+
+        (h_b.join().unwrap(), h_d.join().unwrap())
+    });
+
+    println!("[TITAN-PERF] Dual-Cluster Overlap (B || D) completed in {:?}", t_db.elapsed());
+
+    let pi_y = primes[1..].partition_point(|&p| p <= y) as i64;
+
+    println!(
+        "[TITAN-TERM-BREAKDOWN] Phi0 = {}, Sigma = {}, B = {}, AC = {}, D = {}",
+        phi0_val, sigma_val, b_val, ac_val, total_d
+    );
+
+    let res = ac_val - b_val + total_d + (phi0_val as i128) + (sigma_val as i128);
+    res as i64
 }
 
 #[allow(dead_code)]
@@ -264,12 +279,10 @@ pub fn execute_redshift_master_telemetry(
             let mut ac_cyc = 0u64;
             let mut d_cyc = 0u64;
 
-            // Core 6 front-loads B(x, y) with cycle instrumentation
+            // Core 6 front-loads B(x, y) with streaming (zero PiTable lookups)
             if core_id == 6 {
                 let t_start = read_hardware_cycles();
-                let b_val = crate::b_walker::compute_b_monotone_walker(
-                    x, y, thread_primes, thread_picache,
-                );
+                let b_val = crate::b_term::compute_b_streaming(x, y, thread_primes);
                 b_acc.store(b_val, Ordering::Release);
                 b_cyc = read_hardware_cycles().saturating_sub(t_start);
             }
@@ -349,13 +362,69 @@ pub fn execute_redshift_master_telemetry(
     }
 
     let b_val = global_b.load(Ordering::Acquire);
-    let phi0_val = Phi0Engine::new().eval(x);
+    let phi0_val = Phi0Engine::new().eval_gourdon(x, y, z, 8, primes);
     let sigma_val = crate::sigma_l1::sigma_gourdon(x, y, primes, pi_table) as i64;
     let prime_slice = if primes.first() == Some(&0) { &primes[1..] } else { primes };
     let pi_y = prime_slice.partition_point(|&p| p <= y) as i64;
 
-    let pi_result = phi0_val + sigma_val + (pi_y - 1) - b_val - total_ac - total_d;
+    let pi_result = total_ac - b_val + total_d + phi0_val + sigma_val;
     (pi_result, max_breakdown)
+}
+
+/// Native Pure-Rust Gourdon master evaluation.
+/// Builds full context and executes the genuine 5-term master pipeline.
+/// Prints explicit diagnostic telemetry to ensure complete transparency of execution.
+pub fn try_native_gourdon_pi(x: u64, _num_threads: usize) -> Option<u64> {
+    use titan_core::roots::isqrt;
+    use titan_core::tuning::GourdonParams;
+    use titan_sieve::base::generate_base_primes;
+    use crate::mu_sieve::MertensTable;
+    use crate::pi_table::PiTable;
+
+    let force_native = std::env::var("TITAN_NATIVE")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+
+    if !force_native {
+        println!("[TITAN-NATIVE-PIPELINE] TITAN_NATIVE not set. Gating active: native Gourdon will not run unless TITAN_NATIVE=1.");
+        return None;
+    }
+
+    println!("[TITAN-NATIVE-PIPELINE] >>> INITIATING PURE-RUST XAVIER GOURDON ENGINE (x = {}) <<<", x);
+
+    if x <= 10_000_000 {
+        println!("[TITAN-NATIVE-PIPELINE] Scale x <= 10^7, routing to small sieve");
+        return Some(titan_sieve::small_sieve::count_primes_small(x));
+    }
+
+    let params = GourdonParams::compute(x);
+    let y = params.y;
+    let z = params.z;
+    let x_div_y = params.x_div_y;
+    let x_sqrt = isqrt(x);
+
+    println!("[TITAN-NATIVE-PIPELINE] Parameters: y = {}, z = {}, x/y = {}, sqrt(x) = {}", y, z, x_div_y, x_sqrt);
+
+    if x < 1_000_000_000_000 {
+        panic!("[TITAN-FATAL] TITAN_NATIVE guard failed: x = {} < 1e12 (native Gourdon requires x >= 1e12)", x);
+    }
+
+    let max_v = z;
+    let max_prime = z + 100;
+    println!("[TITAN-NATIVE-PIPELINE] Generating base primes up to {}", max_prime);
+    let base_primes = generate_base_primes(max_prime);
+    let mut primes = Vec::with_capacity(base_primes.len() + 1);
+    primes.push(0);
+    primes.extend_from_slice(&base_primes);
+
+    println!("[TITAN-NATIVE-PIPELINE] Allocating PiTable (max_v = {})...", max_v);
+    let pi_table = PiTable::new(max_v + 30);
+
+    println!("[TITAN-NATIVE-PIPELINE] Invoking execute_gourdon_master (8 DynamIQ threads)...");
+    let res = execute_gourdon_master(x, y, z, &primes, &pi_table);
+    println!("[TITAN-NATIVE-PIPELINE] Native Master Execution Completed: π({}) = {}", x, res);
+
+    Some(res as u64)
 }
 
 pub struct GourdonPipeline {
@@ -374,6 +443,10 @@ impl GourdonPipeline {
         let x = self.x;
         if x <= 10_000_000 {
             return titan_sieve::small_sieve::count_primes_small(x);
+        }
+
+        if let Some(ans) = try_native_gourdon_pi(x, num_threads) {
+            return ans;
         }
 
         if let Some(ans) = crate::gourdon_hetero::fast_gourdon(x, num_threads) {

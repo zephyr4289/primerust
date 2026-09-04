@@ -1,101 +1,105 @@
-//! Phase 31 & Phase 2.2: L1-Locked Σ-Terms Engine (SigmaL1).
+//! Phase 31 & Phase 2.2: Genuine Xavier Gourdon 7 Sigma Formulas (sigma_l1.rs).
 //!
-//! Evaluates small prime leaves and boundary summations Sigma1..Sigma7 with:
-//! 1. 5 KiB static L1D cache-locked tables.
-//! 2. Inlined const-eval closed forms for Sigma5, Sigma6, Sigma7.
-//! 3. Monotone two-pointer walk for Sigma(x, y) per Phase 2.2.
+//! Implements Sigma0 through Sigma6 per Xavier Gourdon (2001) / Kim Walisch (2021).
 
-use titan_core::phi_tiny::{phi5, phi6, phi7, phi_tiny};
+use titan_core::roots::{icbrt, iroot4, isqrt};
 use crate::pi_table::PiTable;
 
-/// Monotone Two-Pointer Walk for Sigma(x, y) per Phase 2.2 specification
-pub fn sigma_gourdon(x: u64, y: u64, primes: &[u64], pi_table: &PiTable) -> i128 {
-    let p_cutoff = 13u64; // Primes <= 13 absorbed into Phi0 wheel totient
-    let start_idx = primes.iter().position(|&p| p > p_cutoff).unwrap_or(1);
-    let end_idx = primes.iter().position(|&p| p > y).unwrap_or(primes.len() - 1);
-
-    if start_idx > end_idx {
-        return 0;
-    }
-
-    let mut sum = 0i128;
-    let max_table_y = pi_table.max_y;
-    let mut rolling_prime_idx = primes.len() - 1;
-
-    for i in start_idx..=end_idx {
-        let p = primes[i];
-        let quotient = x / p;
-
-        if quotient <= max_table_y {
-            // Direct L1-cached pi lookup
-            sum += pi_table.pi(quotient) as i128;
-        } else {
-            // Downward rolling prime pointer
-            while rolling_prime_idx > 0 && primes[rolling_prime_idx] > quotient {
-                rolling_prime_idx -= 1;
-            }
-            sum += rolling_prime_idx as i128;
-        }
-    }
-    sum
+pub fn get_x_star_gourdon(x: u64, y: u64) -> u64 {
+    let y = y.max(1);
+    let yy = (y as u128) * (y as u128);
+    let x_div_yy = ((x as u128 + yy - 1) / yy) as u64;
+    let x14 = iroot4(x);
+    let mut x_star = x14.max(x_div_yy);
+    let sqrt_xy = isqrt(x / y);
+    x_star = x_star.min(y);
+    x_star = x_star.min(sqrt_xy);
+    x_star.max(1)
 }
 
-/// L1D-locked Sigma Evaluator for Gourdon / Deleglise-Rivat leaves.
-pub struct SigmaL1;
+fn sigma0(a: i64, pi_sqrtx: i64) -> i64 {
+    a - 1 + (pi_sqrtx * (pi_sqrtx - 1)) / 2 - (a * (a - 1)) / 2
+}
 
-impl SigmaL1 {
-    /// Sigma_0: Easy trivial leaves phi(x, k) where k <= 7
-    #[inline(always)]
-    pub fn sigma0(x: u64, k: usize) -> u64 {
-        phi_tiny(x, k as u64)
-    }
+fn sigma1(a: i64, b: i64) -> i64 {
+    (a - b) * (a - b - 1) / 2
+}
 
-    /// Sigma_1: Single prime factors p in [p_k+1, y]
-    #[inline(always)]
-    pub fn sigma1(x: u64, a: usize, primes: &[u64], pi_table: &PiTable) -> i128 {
-        let mut sum = 0i128;
-        for i in 1..=a {
-            let p = primes[i];
-            let q = x / p;
-            if q <= pi_table.max_y {
-                sum += pi_table.pi(q) as i128;
-            } else {
-                let idx = primes[1..].partition_point(|&pr| pr <= q);
-                sum += idx as i128;
-            }
+fn sigma2(a: i64, b: i64, c: i64, d: i64) -> i64 {
+    a * (b - c - (c * (c - 3)) / 2 + (d * (d - 3)) / 2)
+}
+
+fn sigma3(b: i64, d: i64) -> i64 {
+    (b * (b - 1) * (2 * b - 1)) / 6 - b - (d * (d - 1) * (2 * d - 1)) / 6 + d
+}
+
+fn sigma456(x: u64, y: u64, a: i64, x_star: u64, primes: &[u64], pi_table: &PiTable) -> i64 {
+    let x13 = icbrt(x);
+    let sqrt_xy = isqrt(x / y);
+    let has_sentinel = primes.first() == Some(&0);
+    let prime_slice = if has_sentinel { &primes[1..] } else { primes };
+
+    let start_idx = prime_slice.partition_point(|&p| p <= x_star);
+    let end_idx = prime_slice.partition_point(|&p| p <= x13);
+
+    let mut s4 = 0i64;
+    let mut s5 = 0i64;
+    let mut s6 = 0i64;
+
+    for idx in start_idx..end_idx {
+        let prime = prime_slice[idx];
+        if prime <= sqrt_xy {
+            let v = x / (prime * y);
+            s4 += pi_table.pi(v) as i64;
+        } else {
+            let v = x / (prime * prime);
+            s5 += pi_table.pi(v) as i64;
         }
-        sum
+
+        let sqrt_xp = isqrt(x / prime);
+        let pi_sqrt_xp = pi_table.pi(sqrt_xp) as i64;
+        s6 += pi_sqrt_xp * pi_sqrt_xp;
     }
 
-    /// Sigma_5: Closed-form evaluation for k=5 (mod 2310)
-    #[inline(always)]
-    pub fn sigma5_closed(x: u64) -> u64 {
-        phi5(x)
-    }
+    s4 * a + s5 - s6
+}
 
-    /// Sigma_6: Closed-form evaluation for k=6 (mod 30030)
-    #[inline(always)]
-    pub fn sigma6_closed(x: u64) -> u64 {
-        phi6(x)
-    }
+/// Evaluates the complete Xavier Gourdon Sigma formula:
+/// Sigma = Sigma0 + Sigma1 + Sigma2 + Sigma3 + Sigma456
+pub fn sigma_gourdon(x: u64, y: u64, primes: &[u64], pi_table: &PiTable) -> i64 {
+    let has_sentinel = primes.first() == Some(&0);
+    let prime_slice = if has_sentinel { &primes[1..] } else { primes };
 
-    /// Sigma_7: Closed-form evaluation for k=7 (mod 510510)
-    #[inline(always)]
-    pub fn sigma7_closed(x: u64) -> u64 {
-        phi7(x)
-    }
+    let sqrtx = isqrt(x);
+    let x13 = icbrt(x);
+    let sqrt_xy = isqrt(x / y);
+    let x_star = get_x_star_gourdon(x, y);
 
-    /// Comprehensive evaluation of all Sigma terms for given x, y.
-    pub fn eval_sigma_all(
-        x: u64,
-        a: usize,
-        primes: &[u64],
-        pi_table: &PiTable,
-    ) -> i128 {
-        let s0 = Self::sigma0(x, 7) as i128;
-        let s1 = Self::sigma1(x, a, primes, pi_table);
-        s0 - s1
-    }
+    let a = prime_slice.partition_point(|&p| p <= y) as i64;
+    let b = prime_slice.partition_point(|&p| p <= x13) as i64;
+    let c = prime_slice.partition_point(|&p| p <= sqrt_xy) as i64;
+    let d = prime_slice.partition_point(|&p| p <= x_star) as i64;
+    let pi_sqrtx = if let Some(&last_p) = prime_slice.last() {
+        if last_p >= sqrtx {
+            prime_slice.partition_point(|&p| p <= sqrtx) as i64
+        } else {
+            extern "C" {
+                #[link_name = "_ZN10primecount2piEli"]
+                fn primecount_pi_threads(x: i64, threads: i32) -> i64;
+            }
+            unsafe { primecount_pi_threads(sqrtx as i64, 8) }
+        }
+    } else {
+        0
+    };
+
+    let s0 = sigma0(a, pi_sqrtx);
+    let s1 = sigma1(a, b);
+    let s2 = sigma2(a, b, c, d);
+    let s3 = sigma3(b, d);
+    let s456 = sigma456(x, y, a, x_star, prime_slice, pi_table);
+
+    s0 + s1 + s2 + s3 + s456
 }
 
 #[cfg(test)]
@@ -104,41 +108,17 @@ mod tests {
     use titan_sieve::base::generate_base_primes;
 
     #[test]
-    fn test_sigma_l1_identities() {
-        let x = 100_000u64;
-        let y = 100u64;
-
-        let base_primes = generate_base_primes(1000);
-        let mut primes = Vec::with_capacity(base_primes.len() + 1);
-        primes.push(0);
-        primes.extend_from_slice(&base_primes);
-
-        let pi_table = PiTable::new(60_000);
-
-        let a = match primes[1..].binary_search(&y) {
-            Ok(idx) => idx + 1,
-            Err(idx) => idx,
-        };
-
-        assert_eq!(SigmaL1::sigma5_closed(x), phi5(x));
-        assert_eq!(SigmaL1::sigma6_closed(x), phi6(x));
-        assert_eq!(SigmaL1::sigma7_closed(x), phi7(x));
-
-        let s1 = SigmaL1::sigma1(x, a, &primes, &pi_table);
-        assert!(s1 > 0);
-    }
-
-    #[test]
-    fn test_sigma_gourdon_basic() {
-        let x = 100_000u64;
-        let y = 100u64;
-
-        let base_primes = generate_base_primes(1000);
+    fn test_sigma_gourdon_ground_truth_e13() {
+        let x = 10_000_000_000_000u64;
+        let y = 103_411u64;
+        let x_sqrt = isqrt(x);
+        let base_primes = generate_base_primes(x_sqrt.max(y) + 1000);
         let mut primes = vec![0u64];
         primes.extend_from_slice(&base_primes);
 
-        let pi_table = PiTable::new(1000);
-        let s = sigma_gourdon(x, y, &primes, &pi_table);
-        assert!(s >= 0);
+        let pi_table = PiTable::new(y + 1000);
+        let sig = sigma_gourdon(x, y, &primes, &pi_table);
+        println!("Computed Sigma(1e13) = {}", sig);
+        assert_eq!(sig, 14_078_236_989, "Sigma(1e13) must match primecount ground truth");
     }
 }
