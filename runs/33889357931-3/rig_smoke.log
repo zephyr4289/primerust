@@ -1,0 +1,78 @@
+[1m[33mwarning[0m[1m: unused import: `Ordering`[0m
+ [1m[94m--> [0mcrates/titan-bench/src/sampler.rs:6:38
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use std::sync::atomic::{AtomicUsize, Ordering};
+  [1m[94m|[0m                                      [1m[33m^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `titan-bench` (lib) generated 1 warning (run `cargo fix --lib -p titan-bench` to apply 1 suggestion)
+[1m[92m   Compiling[0m titan-rig v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-rig)
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+   [1m[94m--> [0mcrates/titan-rig/src/session.rs:564:20
+    [1m[94m|[0m
+[1m[94m564[0m [1m[94m|[0m         let med = |mut v: Vec<f64>| -> J {
+    [1m[94m|[0m                    [1m[94m----[0m[1m[33m^[0m
+    [1m[94m|[0m                    [1m[94m|[0m
+    [1m[94m|[0m                    [1m[94mhelp: remove this `mut`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+   [1m[94m--> [0mcrates/titan-rig/src/session.rs:426:9
+    [1m[94m|[0m
+[1m[94m426[0m [1m[94m|[0m     let mut total_runs = cfg.pairs.len() * 2 + cfg.singles.len();
+    [1m[94m|[0m         [1m[94m----[0m[1m[33m^^^^^^^^^^[0m
+    [1m[94m|[0m         [1m[94m|[0m
+    [1m[94m|[0m         [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: function `emit` is never used[0m
+   [1m[94m--> [0mcrates/titan-rig/src/minjson.rs:298:8
+    [1m[94m|[0m
+[1m[94m298[0m [1m[94m|[0m pub fn emit(v: &J) -> String {
+    [1m[94m|[0m        [1m[33m^^^^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `titan-rig` (bin "rig") generated 3 warnings (run `cargo fix --bin "rig" -p titan-rig` to apply 2 suggestions)
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 4.53s
+{
+  "tool": "titan-rig run (Phase 0 S0)",
+  "name": "s0-smoke",
+  "seed": 20260904,
+  "titan_sha": "1e883e1539d87a609a0315d31f5e2a66c2d0ed93",
+  "opponent_sha256": "08e570c59c317445aee16b445f65679e9fc2378c560c962076b66d294fdfdf2e",
+  "battery_pct": null,
+  "airplane_mode": null,
+  "screen": null,
+  "charging": null,
+  "loadavg_start": 1.86,
+  "logger_pin": "cpu0",
+  "cooldown_secs": 1,
+  "discard_first": 1,
+  "runs": [],
+  "pairs": [
+    {
+      "i": 0,
+      "order": "ab",
+      "kept": false,
+      "d_ms": null
+    }
+  ],
+  "summary": {
+    "kept_pairs": 0
+  },
+  "freq_trace": [
+    {
+      "t_ms": 0,
+      "cpu_khz": [
+        3473865,
+        3491274,
+        3495095,
+        3492840
+      ],
+      "zones": []
+    }
+  ],
+  "aborted": "pair 0 run 'pc-1e9': spawn '/data/data/com.termux/files/usr/bin/primecount' failed: No such file or directory (os error 2)"
+}

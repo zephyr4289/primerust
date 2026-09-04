@@ -1,0 +1,384 @@
+[1m[92m   Compiling[0m libc v0.2.189
+[1m[92m   Compiling[0m titan-core v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-core)
+[1m[33mwarning[0m[1m: unused variable: `c1`[0m
+  [1m[94m--> [0mcrates/titan-core/src/telemetry.rs:92:13
+   [1m[94m|[0m
+[1m[94m92[0m [1m[94m|[0m         let c1 = read_hardware_cycles();
+   [1m[94m|[0m             [1m[33m^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_c1`[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused variable: `c2`[0m
+  [1m[94m--> [0mcrates/titan-core/src/telemetry.rs:94:13
+   [1m[94m|[0m
+[1m[94m94[0m [1m[94m|[0m         let c2 = read_hardware_cycles();
+   [1m[94m|[0m             [1m[33m^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_c2`[0m
+
+[1m[33mwarning[0m: `titan-core` (lib test) generated 2 warnings (run `cargo fix --lib -p titan-core --tests` to apply 2 suggestions)
+[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.60s
+[1m[92m     Running[0m unittests src/lib.rs (target/debug/deps/titan_core-8d9e14424c9b8e3c)
+
+running 30 tests
+test bit_array::tests::test_bit_get_set_clear_roundtrip ... ok
+test autotuner::tests::test_autotuner_basic ... ok
+test affinity::tests::test_core_class_detection ... ok
+test affinity::tests::test_pin_thread_to_cluster ... ok
+test bit_array::tests::test_mask_above ... ok
+test cpu::tests::test_detect_sane ... ok
+test cpu::tests::test_pin_target_in_range ... ok
+test cpu::tests::test_smp_round_robin ... ok
+test huge_alloc::tests::test_huge_page_buffer_empty ... ok
+test phi_tiny::tests::ground_truth_100 ... ok
+test huge_alloc::tests::test_huge_page_buffer_basic ... ok
+test bit_array::tests::test_count_range_differential_against_scalar_oracle ... ok
+test phi_tiny::tests::test_periodicity_and_large_x_identity ... ok
+test phi_tiny::tests::test_recursive_k7_and_k8 ... ok
+test redshift_pool::tests::test_redshift_task_space_partitioning ... ok
+test phi_tiny::tests::test_phi_mutant_caught ... ok
+test roots::tests::test_edge_identities ... ok
+test roots::tests::test_high_range_lcg_squares ... ok
+test roots::tests::test_mutant_m_root_caught ... ok
+test telemetry::tests::test_hardware_cycles_monotonic ... ok
+test tuning::tests::test_alpha_calibration_at_ultra_scales ... ok
+test tuning::tests::test_exact_integer_cbrt ... ok
+test tuning::tests::test_gourdon_mathematical_invariants ... ok
+test tuning::tests::test_segment_alignment_invariants ... ok
+test tuning::tests::test_sieve_segment_reduction_1e18 ... ok
+test wheel::tests::test_cand_idx_monotone ... ok
+test wheel::tests::test_wheel_units_and_periodicity ... ok
+test roots::tests::test_iroot4_exhaustive ... ok
+test roots::tests::test_isqrt_boundary_exhaustive ... ok
+test phi_tiny::tests::test_exhaustive_over_full_period_k1_to_k6 ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+[1m[92m   Compiling[0m titan-count v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-count)
+[1m[92m   Compiling[0m titan-core v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-core)
+[1m[92m   Compiling[0m titan-bench v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-bench)
+[1m[33mwarning[0m[1m: unused import: `Ordering`[0m
+ [1m[94m--> [0mcrates/titan-bench/src/sampler.rs:6:38
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use std::sync::atomic::{AtomicUsize, Ordering};
+  [1m[94m|[0m                                      [1m[33m^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[92m   Compiling[0m titan-sieve v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-sieve)
+[1m[33mwarning[0m[1m: unnecessary parentheses around block return value[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/adaptive_dispenser.rs:38:17
+   [1m[94m|[0m
+[1m[94m38[0m [1m[94m|[0m                 ((remaining >> 4).clamp(1, 64)) // Big cores take up to 64 segments
+   [1m[94m|[0m                 [1m[33m^[0m                             [1m[33m^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m38[0m [91m- [0m                [91m([0m(remaining >> 4).clamp(1, 64)[91m)[0m // Big cores take up to 64 segments
+[1m[94m38[0m [92m+ [0m                (remaining >> 4).clamp(1, 64) // Big cores take up to 64 segments
+   [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unnecessary parentheses around block return value[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/adaptive_dispenser.rs:40:17
+   [1m[94m|[0m
+[1m[94m40[0m [1m[94m|[0m                 ((remaining >> 6).clamp(1, 16)) // Little cores take up to 16 segments
+   [1m[94m|[0m                 [1m[33m^[0m                             [1m[33m^[0m
+   [1m[94m|[0m
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m40[0m [91m- [0m                [91m([0m(remaining >> 6).clamp(1, 16)[91m)[0m // Little cores take up to 16 segments
+[1m[94m40[0m [92m+ [0m                (remaining >> 6).clamp(1, 16) // Little cores take up to 16 segments
+   [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unused import: `mark_wheel8`[0m
+ [1m[94m--> [0mcrates/titan-sieve/src/b_carry.rs:9:66
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m use crate::kernels::{compute_wheel_deltas_for_prime, first_mark, mark_wheel8};
+  [1m[94m|[0m                                                                  [1m[33m^^^^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused import: `core::arch::asm`[0m
+ [1m[94m--> [0mcrates/titan-sieve/src/stream_pipeline.rs:6:5
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use core::arch::asm;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused variable: `bit_ptr`[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/dense_popcount.rs:30:13
+   [1m[94m|[0m
+[1m[94m30[0m [1m[94m|[0m         let bit_ptr = segment.as_ptr() as *const u8;
+   [1m[94m|[0m             [1m[33m^^^^^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_bit_ptr`[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused variable: `ptr`[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/l1_popcount.rs:31:13
+   [1m[94m|[0m
+[1m[94m31[0m [1m[94m|[0m         let ptr = segment.as_ptr() as *const u8;
+   [1m[94m|[0m             [1m[33m^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_ptr`[0m
+
+[1m[33mwarning[0m[1m: unused variable: `addr`[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/stream_pipeline.rs:14:31
+   [1m[94m|[0m
+[1m[94m14[0m [1m[94m|[0m pub unsafe fn prefetch_stream(addr: *const u8) {
+   [1m[94m|[0m                               [1m[33m^^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_addr`[0m
+
+[1m[33mwarning[0m[1m: value assigned to `prefix` is never read[0m
+   [1m[94m--> [0mcrates/titan-sieve/src/stream_pipeline.rs:150:9
+    [1m[94m|[0m
+[1m[94m150[0m [1m[94m|[0m         prefix += zeros_cnt;
+    [1m[94m|[0m         [1m[33m^^^^^^^^^^^^^^^^^^^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: maybe it is overwritten before being read?
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+ [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:7:5
+  [1m[94m|[0m
+[1m[94m7[0m [1m[94m|[0m     mut off_a: usize,
+  [1m[94m|[0m     [1m[94m----[0m[1m[33m^^^^^[0m
+  [1m[94m|[0m     [1m[94m|[0m
+  [1m[94m|[0m     [1m[94mhelp: remove this `mut`[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+ [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:8:5
+  [1m[94m|[0m
+[1m[94m8[0m [1m[94m|[0m     mut adv_a: u64,
+  [1m[94m|[0m     [1m[94m----[0m[1m[33m^^^^^[0m
+  [1m[94m|[0m     [1m[94m|[0m
+  [1m[94m|[0m     [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+ [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:9:5
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m     mut mask_a: u64,
+  [1m[94m|[0m     [1m[94m----[0m[1m[33m^^^^^^[0m
+  [1m[94m|[0m     [1m[94m|[0m
+  [1m[94m|[0m     [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:10:5
+   [1m[94m|[0m
+[1m[94m10[0m [1m[94m|[0m     mut off_b: usize,
+   [1m[94m|[0m     [1m[94m----[0m[1m[33m^^^^^[0m
+   [1m[94m|[0m     [1m[94m|[0m
+   [1m[94m|[0m     [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:11:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m     mut adv_b: u64,
+   [1m[94m|[0m     [1m[94m----[0m[1m[33m^^^^^[0m
+   [1m[94m|[0m     [1m[94m|[0m
+   [1m[94m|[0m     [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:12:5
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m     mut mask_b: u64,
+   [1m[94m|[0m     [1m[94m----[0m[1m[33m^^^^^^[0m
+   [1m[94m|[0m     [1m[94m|[0m
+   [1m[94m|[0m     [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:15:9
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m     let mut step = unrolled_steps;
+   [1m[94m|[0m         [1m[94m----[0m[1m[33m^^^^[0m
+   [1m[94m|[0m         [1m[94m|[0m
+   [1m[94m|[0m         [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: field `idx_to_coprime` is never read[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/factor_table.rs:19:5
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m pub struct FactorTableD {
+   [1m[94m|[0m            [1m[94m------------[0m [1m[94mfield in this struct[0m
+[1m[94m...[0m
+[1m[94m19[0m [1m[94m|[0m     idx_to_coprime: [u16; WHEEL2310_COPRIMES],
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[92m   Compiling[0m titan-pool v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-pool)
+[1m[33mwarning[0m: `titan-bench` (lib) generated 1 warning (run `cargo fix --lib -p titan-bench` to apply 1 suggestion)
+[1m[33mwarning[0m: `titan-sieve` (lib) generated 16 warnings (run `cargo fix --lib -p titan-sieve` to apply 14 suggestions)
+[1m[33mwarning[0m[1m: unused import: `core::arch::asm`[0m
+  [1m[94m--> [0mcrates/titan-count/src/ftd_compressed.rs:11:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m use core::arch::asm;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused import: `cand_idx`[0m
+  [1m[94m--> [0mcrates/titan-count/src/ftd_v2.rs:10:25
+   [1m[94m|[0m
+[1m[94m10[0m [1m[94m|[0m use titan_core::wheel::{cand_idx, UNITS};
+   [1m[94m|[0m                         [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::b_term::compute_b_term_mt`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon.rs:10:5
+   [1m[94m|[0m
+[1m[94m10[0m [1m[94m|[0m use crate::b_term::compute_b_term_mt;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::d_term::compute_d_term_mt`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon.rs:11:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m use crate::d_term::compute_d_term_mt;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::leaves::LeafEngine`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon.rs:12:5
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m use crate::leaves::LeafEngine;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::p2_sweep::compute_p2_range_mt`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon.rs:13:5
+   [1m[94m|[0m
+[1m[94m13[0m [1m[94m|[0m use crate::p2_sweep::compute_p2_range_mt;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::pi_table::PiTable`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon.rs:14:5
+   [1m[94m|[0m
+[1m[94m14[0m [1m[94m|[0m use crate::pi_table::PiTable;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::scale_dispatch::ScaleDispatch`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon.rs:15:5
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m use crate::scale_dispatch::ScaleDispatch;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::mertens_struct::MertensStructure`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon.rs:16:5
+   [1m[94m|[0m
+[1m[94m16[0m [1m[94m|[0m use crate::mertens_struct::MertensStructure;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `titan_sieve::asymmetric_dispenser::AsymmetricChunkDispenser`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:14:5
+   [1m[94m|[0m
+[1m[94m14[0m [1m[94m|[0m use titan_sieve::asymmetric_dispenser::AsymmetricChunkDispenser;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::b_term::compute_b_monotone`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:16:5
+   [1m[94m|[0m
+[1m[94m16[0m [1m[94m|[0m use crate::b_term::compute_b_monotone;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::ac_term::compute_ac_fused`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:17:5
+   [1m[94m|[0m
+[1m[94m17[0m [1m[94m|[0m use crate::ac_term::compute_ac_fused;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::factor_table::CompressedFactorTable`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:19:5
+   [1m[94m|[0m
+[1m[94m19[0m [1m[94m|[0m use crate::factor_table::CompressedFactorTable;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `titan_core::roots::isqrt`[0m
+  [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:20:5
+   [1m[94m|[0m
+[1m[94m20[0m [1m[94m|[0m use titan_core::roots::isqrt;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::mu_sieve::MertensTable`[0m
+   [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:446:9
+    [1m[94m|[0m
+[1m[94m446[0m [1m[94m|[0m     use crate::mu_sieve::MertensTable;
+    [1m[94m|[0m         [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `titan_sieve::base::generate_base_primes`[0m
+   [1m[94m--> [0mcrates/titan-count/src/interval_walker.rs:223:9
+    [1m[94m|[0m
+[1m[94m223[0m [1m[94m|[0m     use titan_sieve::base::generate_base_primes;
+    [1m[94m|[0m         [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused variable: `p`[0m
+  [1m[94m--> [0mcrates/titan-count/src/asymmetric_handoff_v2.rs:68:13
+   [1m[94m|[0m
+[1m[94m68[0m [1m[94m|[0m         let p = Arc::clone(&primes);
+   [1m[94m|[0m             [1m[33m^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_p`[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused variable: `len`[0m
+  [1m[94m--> [0mcrates/titan-count/src/ftd_block.rs:46:9
+   [1m[94m|[0m
+[1m[94m46[0m [1m[94m|[0m     let len = (hi - lo) as usize;
+   [1m[94m|[0m         [1m[33m^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_len`[0m
+
+[1m[33mwarning[0m[1m: unused variable: `next_addr`[0m
+  [1m[94m--> [0mcrates/titan-count/src/ftd_compressed.rs:95:21
+   [1m[94m|[0m
+[1m[94m95[0m [1m[94m|[0m                 let next_addr = unsafe { self.data.as_ptr().add(chunk_end) };
+   [1m[94m|[0m                     [1m[33m^^^^^^^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_next_addr`[0m
+
+[1m[33mwarning[0m[1m: unused variable: `pi_y`[0m
+   [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:178:9
+    [1m[94m|[0m
+[1m[94m178[0m [1m[94m|[0m     let pi_y = primes[1..].partition_point(|&p| p <= y) as i64;
+    [1m[94m|[0m         [1m[33m^^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_pi_y`[0m
+
+[1m[33mwarning[0m[1m: unused variable: `pi_y`[0m
+   [1m[94m--> [0mcrates/titan-count/src/gourdon_pipeline.rs:433:9
+    [1m[94m|[0m
+[1m[94m433[0m [1m[94m|[0m     let pi_y = prime_slice.partition_point(|&p| p <= y) as i64;
+    [1m[94m|[0m         [1m[33m^^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_pi_y`[0m
+
+[1m[33mwarning[0m[1m: unused variable: `a`[0m
+  [1m[94m--> [0mcrates/titan-count/src/lmo.rs:96:13
+   [1m[94m|[0m
+[1m[94m96[0m [1m[94m|[0m         let a = match primes[1..].binary_search(&x_cbrt) {
+   [1m[94m|[0m             [1m[33m^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_a`[0m
+
+[1m[33mwarning[0m[1m: unused variable: `a`[0m
+   [1m[94m--> [0mcrates/titan-count/src/lmo.rs:197:13
+    [1m[94m|[0m
+[1m[94m197[0m [1m[94m|[0m         let a = match primes[1..].binary_search(&x_cbrt) {
+    [1m[94m|[0m             [1m[33m^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_a`[0m
+
+[1m[33mwarning[0m[1m: function `picount` is never used[0m
+   [1m[94m--> [0mcrates/titan-count/src/ac_parallel_v2.rs:371:8
+    [1m[94m|[0m
+[1m[94m371[0m [1m[94m|[0m     fn picount(pi_table: &PiTable, v: u64) -> usize {
+    [1m[94m|[0m        [1m[33m^^^^^^^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: field `word_count` is never read[0m
+  [1m[94m--> [0mcrates/titan-count/src/segmented_pi.rs:26:5
+   [1m[94m|[0m
+[1m[94m22[0m [1m[94m|[0m pub struct SegmentedPiTable {
+   [1m[94m|[0m            [1m[94m----------------[0m [1m[94mfield in this struct[0m
+[1m[94m...[0m
+[1m[94m26[0m [1m[94m|[0m     word_count: usize,
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: field `word_count` is never read[0m
+  [1m[94m--> [0mcrates/titan-count/src/segmented_pi_compact.rs:18:5
+   [1m[94m|[0m
+[1m[94m13[0m [1m[94m|[0m pub struct CompactPiTable {
+   [1m[94m|[0m            [1m[94m--------------[0m [1m[94mfield in this struct[0m
+[1m[94m...[0m
+[1m[94m18[0m [1m[94m|[0m     word_count: usize,
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: linking with `cc` failed: exit status: 1[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m:  "cc" "-m64" "/home/runner/work/primerust/primerust/target/debug/deps/rustcLMyQYN/symbols.o" "<17 object files omitted>" "-Wl,--as-needed" "-Wl,-Bdynamic" "-lprimecount" "-lprimesieve" "-lstdc++" "-lgomp" "-Wl,-Bstatic" "/home/runner/work/primerust/primerust/target/debug/deps/{libtitan_pool-25287606b14b0205,libtitan_bench-0f73ead6e38b89f7}.rlib" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*}.rlib" "/home/runner/work/primerust/primerust/target/debug/deps/{libtitan_sieve-189f5d2f7a6087db,libtitan_core-dbfb03de52031053,liblibc-d317274875785fd2}.rlib" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lgcc_s" "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-L" "/home/runner/work/primerust/primerust/target/debug/deps/rustcLMyQYN/raw-dylibs" "-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld" "-fuse-ld=lld" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L" "/usr/lib/aarch64-linux-gnu" "-L" "/usr/lib/x86_64-linux-gnu" "-L" "/usr/local/lib" "-L" "/data/data/com.termux/files/home/primecount-ref/build" "-L" "/data/data/com.termux/files/home/primecount-ref/build/lib/primesieve" "-L" "/data/data/com.termux/files/usr/lib" "-L" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o" "/home/runner/work/primerust/primerust/target/debug/deps/titan_count-30cf95033127e767" "-Wl,--gc-sections" "-pie" "-Wl,-z,relro,-z,now" "-Wl,-O1" "-nodefaultlibs"
+  [1m[94m= [0m[1mnote[0m: some arguments are omitted. use `--verbose` to show all linker arguments
+  [1m[94m= [0m[1mnote[0m: rust-lld: error: unable to find library -lprimecount
+          collect2: error: ld returned 1 exit status
+          
+
+[1m[33mwarning[0m: `titan-count` (lib test) generated 26 warnings
+[1m[91merror[0m: could not compile `titan-count` (lib test) due to 1 previous error; 26 warnings emitted
