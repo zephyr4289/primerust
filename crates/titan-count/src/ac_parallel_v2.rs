@@ -1000,6 +1000,54 @@ pub fn compute_ac_native_mt_windowed(
     a - c1 + c2
 }
 
+/// Strike 5: full native AC, fused windowed, multi-threaded.
+///
+/// One quotient-segment pass sieves each window once and evaluates BOTH the
+/// narrowed A-range and C2-range inside it: `AC = A_fused - C1 + C2_fused`.
+/// Bit-identical to [`compute_ac_native_mt_windowed`].
+pub fn compute_ac_native_mt_fused(
+    x: u64,
+    y: u64,
+    z: u64,
+    k: usize,
+    primes: &[u64],
+    pi_table: &PiTable,
+    num_threads: usize,
+) -> i64 {
+    let t_build = std::time::Instant::now();
+    let stripped: &[u64] = if primes.first() == Some(&0) { &primes[1..] } else { primes };
+    let div_table = FastDivTable::build(stripped, x);
+    println!("[TITAN-PERF] FastDivTable build latency: {:?}", t_build.elapsed());
+    // C1 needs only the small count table + primes (read-only, disjoint from
+    // the fused pass's thread-local windows): overlap it with fused A+C2.
+    let (a, c2, c1) = std::thread::scope(|scope| {
+        let h_fused = scope.spawn(|| {
+            let t_ac = std::time::Instant::now();
+            let (a, c2) = compute_ac_fused_segments_mt(
+                x,
+                y,
+                z,
+                k,
+                primes,
+                div_table.as_slice(),
+                pi_table,
+                num_threads,
+            );
+            println!("[TITAN-PERF] native fused A+C2 latency: {:?}", t_ac.elapsed());
+            (a, c2)
+        });
+        let h_c1 = scope.spawn(|| {
+            let t_c1 = std::time::Instant::now();
+            let c1 = compute_c1_native(x, y, z, k, primes, pi_table);
+            println!("[TITAN-PERF] native C1 latency: {:?}", t_c1.elapsed());
+            c1
+        });
+        let (a, c2) = h_fused.join().expect("fused AC panicked");
+        (a, c2, h_c1.join().expect("C1 panicked"))
+    });
+    a - c1 + c2
+}
+
 // ---------------------------------------------------------------------------
 // Strike 4 (revised): sieved quotient windows + windowed A-leaves.
 // ---------------------------------------------------------------------------
@@ -1252,6 +1300,260 @@ pub fn compute_a_windowed_mt(
     slots.iter().map(|a| a.load(Ordering::Relaxed)).sum()
 }
 
+// ---------------------------------------------------------------------------
+// Strike 5: fused windowed A+C2 dispatcher (one sieve per quotient window).
+// ---------------------------------------------------------------------------
+//
+// Walisch evaluates C2 and A inside the SAME segment pass (`AC_OpenMP`):
+// one sieved window serves both estimators. The fused dispatcher ports that
+// structure: per claimed segment, sieve once, then run the per-segment
+// narrowed A-range (min_a/max_a) and C2-range (min_c2/max_c2). Halves window
+// sieving vs separate A/C2 passes and keeps one L1D-resident table hot.
+
+/// Per-segment A-leaves for a narrowed 0-based b-range (Walisch `A` port).
+///
+/// `xlow = x/low`, `xhigh = x/high` pin the quotient window; every evaluated
+/// `xpq` provably lands in `[window.low, window.high)` (loud assert
+/// otherwise). Uses the shared reciprocal table for divisions.
+#[allow(clippy::too_many_arguments)]
+fn seg_a_sum(
+    x: u64,
+    y: u64,
+    s: &[u64],
+    r: &[FastDiv64],
+    count_table: &PiTable,
+    window: &QuotientWindow,
+    b_start: usize,
+    b_end: usize,
+    xlow: u64,
+    xhigh: u64,
+) -> i64 {
+    let mut seg_sum: i64 = 0;
+    for b in b_start..b_end.min(s.len()) {
+        let p = s[b];
+        if p < 2 {
+            continue;
+        }
+        let xp = x / p;
+        let sqrt_xp = isqrt64(xp);
+        let min_2nd = (xhigh / p).min(sqrt_xp);
+        let j0 = count_table.pi(p.max(min_2nd)) as usize;
+        let max_2nd = (xlow / p).min(sqrt_xp);
+        let e1 = count_table.pi((xp / y.max(1)).min(max_2nd)) as usize;
+        let e2 = count_table.pi(max_2nd) as usize;
+        let mut j = j0.max(b + 1);
+        while j < e1.min(s.len()) {
+            let xpq = r[j].div(xp);
+            debug_assert!(
+                xpq >= window.low && xpq < window.high,
+                "fused w1 xpq {} outside [{}, {})",
+                xpq,
+                window.low,
+                window.high
+            );
+            seg_sum += window.pi(xpq) as i64;
+            j += 1;
+        }
+        j = j.max(e1.min(s.len()));
+        while j < e2.min(s.len()) {
+            let xpq = r[j].div(xp);
+            debug_assert!(
+                xpq >= window.low && xpq < window.high,
+                "fused w2 xpq {} outside [{}, {})",
+                xpq,
+                window.low,
+                window.high
+            );
+            seg_sum += (window.pi(xpq) as i64) * 2;
+            j += 1;
+        }
+    }
+    seg_sum
+}
+
+/// Per-segment C2-leaves for a narrowed 0-based b-range (Walisch `C2` port).
+///
+/// Sparse + clustered descent over q in `(min_m, max_m]`, with
+/// `min_m = max(xhigh/p, xp/p^2, p)` and `max_m = min(xlow/p, xp/p, y)`.
+/// Window membership follows from the bounds (asserted, never clamped).
+#[allow(clippy::too_many_arguments)]
+fn seg_c2_sum(
+    x: u64,
+    y: u64,
+    s: &[u64],
+    r: &[FastDiv64],
+    count_table: &PiTable,
+    window: &QuotientWindow,
+    b_start: usize,
+    b_end: usize,
+    xlow: u64,
+    xhigh: u64,
+) -> i64 {
+    #[inline(always)]
+    fn picount(pi_table: &PiTable, v: u64) -> usize {
+        pi_table.pi(v) as usize
+    }
+
+    let mut seg_sum: i64 = 0;
+    for b in b_start..b_end.min(s.len()) {
+        let p = s[b];
+        if p < 2 {
+            continue;
+        }
+        let xp = x / p;
+        let xp_div_p = xp / p;
+        let max_m = (xlow / p).min(xp_div_p).min(y);
+        let min_m = (xhigh / p).max(xp_div_p / p).max(p);
+        if min_m >= max_m {
+            continue;
+        }
+        let j_hi = picount(count_table, max_m).min(s.len());
+        let j_lo = picount(count_table, min_m);
+        if j_lo >= j_hi {
+            continue;
+        }
+        let min_clustered = isqrt64(xp).clamp(min_m, max_m);
+        let j_split = picount(count_table, min_clustered).clamp(j_lo, j_hi);
+        let b1 = (b + 1) as i64;
+        // Sparse.
+        for j in j_lo..j_split {
+            let xpq = r[j].div(xp);
+            debug_assert!(
+                xpq >= window.low && xpq < window.high,
+                "fused c2s xpq {} outside [{}, {})",
+                xpq,
+                window.low,
+                window.high
+            );
+            seg_sum += window.pi(xpq) as i64 - b1 + 2;
+        }
+        // Clustered descent.
+        let mut count = j_hi;
+        while count > j_split {
+            let xpq = r[count - 1].div(xp);
+            debug_assert!(
+                xpq >= window.low && xpq < window.high,
+                "fused c2c xpq {} outside [{}, {})",
+                xpq,
+                window.low,
+                window.high
+            );
+            let v = window.pi(xpq) as usize;
+            let phi = v as i64 - b1 + 2;
+            if v >= s.len() {
+                seg_sum += phi;
+                count -= 1;
+                continue;
+            }
+            let xpq2 = r[v].div(xp);
+            let imin = picount(count_table, xpq2.max(min_clustered)).min(count - 1);
+            seg_sum += phi * (count - imin) as i64;
+            count = imin;
+        }
+    }
+    seg_sum
+}
+
+/// Strike 5: fused windowed A+C2 leaves across DynamIQ cores.
+///
+/// Single `AtomicU64` cursor over quotient segments `[1, x/x_star^2]`; each
+/// worker sieves its claimed window once (L1D-resident) and evaluates both
+/// the narrowed A-range and C2-range inside it. Returns `(a_sum, c2_sum)`.
+/// Bit-identical to `compute_a_windowed_mt + compute_c2_clustered` combined.
+pub fn compute_ac_fused_segments_mt(
+    x: u64,
+    y: u64,
+    z: u64,
+    k: usize,
+    primes: &[u64],
+    rec: &[FastDiv64],
+    count_table: &PiTable,
+    num_threads: usize,
+) -> (i64, i64) {
+    use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+
+    let x13 = icbrt64(x);
+    let x_star = get_x_star_gourdon(x, y);
+    if x_star < 1 {
+        return (0, 0);
+    }
+    let qmax = x / x_star.saturating_mul(x_star).max(1);
+    if qmax < 1 {
+        return (0, 0);
+    }
+    let has_sentinel = primes.first() == Some(&0);
+    let s: &[u64] = if has_sentinel { &primes[1..] } else { primes };
+    if s.is_empty() {
+        return (0, 0);
+    }
+    debug_assert!(rec.len() >= s.len(), "reciprocal table shorter than prime slice");
+    let r: &[FastDiv64] = rec;
+
+    let sieve_limit = isqrt64(qmax) + 1;
+    let base_end = s.partition_point(|&p| p <= sieve_limit);
+    // C2 lower-bound constants independent of the segment.
+    let pi_root3_xy = count_table.pi(icbrt64(x / y.max(1))) as usize;
+    let pi_sqrtz = count_table.pi(isqrt64(z)) as usize;
+
+    let threads = num_threads.clamp(1, 32);
+    let cursor = AtomicU64::new(1);
+    let slots_a: Vec<AtomicI64> = (0..threads).map(|_| AtomicI64::new(0)).collect();
+    let slots_c: Vec<AtomicI64> = (0..threads).map(|_| AtomicI64::new(0)).collect();
+    let cursor_ref = &cursor;
+    let (slots_a_ref, slots_c_ref) = (&slots_a, &slots_c);
+
+    std::thread::scope(|scope| {
+        for tid in 0..threads {
+            scope.spawn(move || {
+                titan_pool::worker::bind_worker_affinity(tid);
+                let mut local_a: i64 = 0;
+                let mut local_c: i64 = 0;
+                loop {
+                    let low = cursor_ref.fetch_add(SEGMENT_Q, Ordering::Relaxed);
+                    if low >= qmax {
+                        break;
+                    }
+                    let high = (low + SEGMENT_Q).min(qmax + 1);
+                    let xlow = x / low.max(1);
+                    let xhigh = x / high;
+                    // Narrowed A-range for this segment.
+                    let sqrt_xlow = isqrt64(xlow);
+                    let a_end = count_table.pi(sqrt_xlow.min(x13)) as usize;
+                    let a_start =
+                        count_table.pi(x_star.max((xhigh / high.max(1)).min(x13))) as usize;
+                    // Narrowed C2-range for this segment.
+                    let c_end = count_table.pi(sqrt_xlow.min(x_star)) as usize;
+                    let c_start = k
+                        .max(pi_root3_xy)
+                        .max(pi_sqrtz)
+                        .max(count_table.pi(isqrt64(low)) as usize)
+                        .max(count_table.pi((xhigh / y.max(1)).min(x_star)) as usize);
+                    if a_start < a_end || c_start < c_end {
+                        let base = if low <= 1 { 0 } else { count_table.pi(low - 1) };
+                        let window = QuotientWindow::sieve(low, high, &s[..base_end], base);
+                        if a_start < a_end {
+                            local_a += seg_a_sum(
+                                x, y, s, r, count_table, &window, a_start, a_end, xlow, xhigh,
+                            );
+                        }
+                        if c_start < c_end {
+                            local_c += seg_c2_sum(
+                                x, y, s, r, count_table, &window, c_start, c_end, xlow, xhigh,
+                            );
+                        }
+                    }
+                }
+                slots_a_ref[tid].store(local_a, Ordering::Relaxed);
+                slots_c_ref[tid].store(local_c, Ordering::Relaxed);
+            });
+        }
+    });
+
+    let a = slots_a.iter().map(|v| v.load(Ordering::Relaxed)).sum();
+    let c = slots_c.iter().map(|v| v.load(Ordering::Relaxed)).sum();
+    (a, c)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1458,6 +1760,50 @@ mod tests {
                 assert_eq!(win, scalar, "windowed MT({}) diverged at x = {}", t, x);
             }
             println!("A_WIN(1e{}) = {} (scalar == MT1 == MT8)", (x as f64).log10() as u32, scalar);
+        }
+    }
+
+    /// Strike 5: fused windowed (A, C2) must equal the separately-certified
+    /// windowed-A and clustered-C2 at all thread counts.
+    #[test]
+    fn test_ac_fused_segments_parity() {
+        use crate::magic_reciprocal::FastDivTable;
+
+        for &x in &[1_000_000_000u64, 100_000_000_000, 1_000_000_000_000] {
+            let params = titan_core::tuning::resolve_gourdon_params(x);
+            let base = generate_base_primes(params.y);
+            let mut primes = vec![0u64];
+            primes.extend_from_slice(&base);
+            let x_star = crate::sigma_l1::get_x_star_gourdon(x, params.y);
+            let pi_table = PiTable::new(x_star.saturating_mul(x_star).max(params.z) + 30);
+            let stripped: &[u64] = &primes[1..];
+            let div_table = FastDivTable::build(stripped, x);
+
+            let a_ref = compute_a_windowed_mt(
+                x,
+                params.y,
+                &primes,
+                div_table.as_slice(),
+                &pi_table,
+                8,
+            );
+            let c_ref =
+                compute_c2_clustered(x, params.y, params.z, &primes, &pi_table);
+            for &t in &[1usize, 8] {
+                let (a_fused, c_fused) = compute_ac_fused_segments_mt(
+                    x,
+                    params.y,
+                    params.z,
+                    8,
+                    &primes,
+                    div_table.as_slice(),
+                    &pi_table,
+                    t,
+                );
+                assert_eq!(a_fused, a_ref, "fused A diverged at x = {} (t = {})", x, t);
+                assert_eq!(c_fused, c_ref, "fused C2 diverged at x = {} (t = {})", x, t);
+            }
+            println!("FUSED(1e{}) = ({}, {})", (x as f64).log10() as u32, a_ref, c_ref);
         }
     }
 }

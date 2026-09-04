@@ -72,14 +72,22 @@ pub fn execute_gourdon_master(
 
     println!("[TITAN-PIPELINE] Phase 1: High-Throughput AC (8 DynamIQ threads)...");
     let t_ac = std::time::Instant::now();
-    // Phase 9.2.2 (Strike 2) shadow: with TITAN_NATIVE_AC=1 the native
-    // AC (A - C1 + clustered C2) runs alongside FFI, asserts bit-exactness,
-    // and FFI is still returned (safe cutover path).
-    let shadow_ac = std::env::var("TITAN_NATIVE_AC")
-        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false);
+    // Strike 5 cutover: pure-Rust native AC is the DEFAULT hot path.
+    // TITAN_NATIVE_AC selects the AC engine:
+    //   unset (default) : pure native (fused windowed A+C2 + C1), no FFI;
+    //   "1"/"true"      : shadow — native + FFI, assert bit-exact, return FFI;
+    //   "ffi"           : legacy FFI only (oracle / fallback).
+    // Certification of pure mode comes from head_to_head's independent
+    // primecount-binary comparison (asserts full pi(x) equality).
+    let ac_mode = std::env::var("TITAN_NATIVE_AC").unwrap_or_default();
+    let shadow_ac = ac_mode == "1" || ac_mode.eq_ignore_ascii_case("true");
+    let ffi_only = ac_mode.eq_ignore_ascii_case("ffi");
+    let pure_ac = !shadow_ac && !ffi_only;
+    if pure_ac {
+        println!("[TITAN-ENGINE: PURE-RUST AC] FFI-free native AC (fused windows)");
+    }
     let shadow_table: Option<PiTable>;
-    if shadow_ac {
+    if shadow_ac || pure_ac {
         // Strike 3.5: native queries satisfy xpq < x_star^2 (A/C2) and
         // xpm <= z (C1), with x_star^2 >= z on Tier-3 scales — so a
         // x_star^2-span table (~3.3 MB at 1e16) replaces the old x/z-span
@@ -95,43 +103,36 @@ pub fn execute_gourdon_master(
         shadow_table = None;
     }
     let ac_val = if x <= i64::MAX as u64 {
-        let ffi_ac =
-            unsafe { primecount_ac_64(x as i64, y as i64, z as i64, 8, 8, false) as i128 };
-        if shadow_ac {
-            let table = shadow_table.as_ref().expect("shadow table");
-            let native_ac =
-                {
-                use crate::magic_reciprocal::FastDivTable;
-                let stripped: &[u64] =
-                    if primes.first() == Some(&0) { &primes[1..] } else { primes };
-                let div_table = FastDivTable::build(stripped, x);
-                crate::ac_parallel_v2::compute_ac_native_mt_windowed(
-                    x, y, z, 8, primes, div_table.as_slice(), table, 8,
-                )
-            };
-            assert_eq!(
-                native_ac as i128, ffi_ac,
-                "[TITAN-SHADOW] native AC diverged from FFI at x = {}",
-                x
-            );
-            println!("[TITAN-SHADOW] native AC == FFI AC == {}", ffi_ac);
+        if pure_ac {
+            let table = shadow_table.as_ref().expect("native table");
+            crate::ac_parallel_v2::compute_ac_native_mt_fused(x, y, z, 8, primes, table, 8)
+                as i128
+        } else {
+            let ffi_ac =
+                unsafe { primecount_ac_64(x as i64, y as i64, z as i64, 8, 8, false) as i128 };
+            if shadow_ac {
+                let table = shadow_table.as_ref().expect("shadow table");
+                let native_ac =
+                    crate::ac_parallel_v2::compute_ac_native_mt_fused(x, y, z, 8, primes, table, 8);
+                assert_eq!(
+                    native_ac as i128, ffi_ac,
+                    "[TITAN-SHADOW] native AC diverged from FFI at x = {}",
+                    x
+                );
+                println!("[TITAN-SHADOW] native AC == FFI AC == {}", ffi_ac);
+            }
+            ffi_ac
         }
-        ffi_ac
+    } else if pure_ac {
+        let table = shadow_table.as_ref().expect("native table");
+        crate::ac_parallel_v2::compute_ac_native_mt_fused(x, y, z, 8, primes, table, 8) as i128
     } else {
         let ffi_ac =
             unsafe { primecount_ac_128(x as i128, y as i64, z as i64, 8, 8, false) };
         if shadow_ac {
             let table = shadow_table.as_ref().expect("shadow table");
             let native_ac =
-                {
-                use crate::magic_reciprocal::FastDivTable;
-                let stripped: &[u64] =
-                    if primes.first() == Some(&0) { &primes[1..] } else { primes };
-                let div_table = FastDivTable::build(stripped, x);
-                crate::ac_parallel_v2::compute_ac_native_mt_windowed(
-                    x, y, z, 8, primes, div_table.as_slice(), table, 8,
-                )
-            };
+                crate::ac_parallel_v2::compute_ac_native_mt_fused(x, y, z, 8, primes, table, 8);
             assert_eq!(
                 native_ac as i128, ffi_ac,
                 "[TITAN-SHADOW] native AC diverged from FFI at x = {}",
