@@ -715,7 +715,9 @@ mod tests {
             let base = generate_base_primes(params.y);
             let mut primes = vec![0u64];
             primes.extend_from_slice(&base);
-            let pi_table = PiTable::new(x / params.z + 30);
+            let x_star = crate::sigma_l1::get_x_star_gourdon(x, params.y);
+            let pi_table =
+                PiTable::new(x_star.saturating_mul(x_star).max(params.z) + 30);
 
             let st = compute_ac_native(x, params.y, params.z, 8, &primes, &pi_table);
             assert!(st > 0, "native AC must be positive at x = {}", x);
@@ -738,7 +740,9 @@ mod tests {
             let mut primes = vec![0u64];
             primes.extend_from_slice(&base);
             // C2 queries satisfy xpq < x / z.
-            let pi_table = PiTable::new(x / params.z + 30);
+            let x_star = crate::sigma_l1::get_x_star_gourdon(x, params.y);
+            let pi_table =
+                PiTable::new(x_star.saturating_mul(x_star).max(params.z) + 30);
 
             let t0 = std::time::Instant::now();
             let scalar = compute_c2_formula(x, params.y, params.z, &primes, &pi_table);

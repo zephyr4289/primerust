@@ -7,8 +7,41 @@ use std::hint::black_box;
 use std::time::Instant;
 use titan_count::tier_dispatch::TierDispatch;
 
-fn get_primecount_cmd() -> std::process::Command {
-    if let Ok(prefix) = std::env::var("PREFIX") {
+/// Strike 3.5: non-blocking silicon state report (freq + thermals).
+/// Prints whether the big/middle clusters recovered to peak; never blocks,
+/// since ambient heat can legitimately hold clocks below peak.
+fn report_silicon_state() {
+    let freq = |cpu: u32| {
+        std::fs::read_to_string(format!(
+            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq",
+            cpu
+        ))
+        .ok()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+    };
+    let temp = |zone: &str| {
+        std::fs::read_to_string(format!("/sys/class/thermal/{}/temp", zone))
+            .ok()
+            .and_then(|s| s.trim().parse::<i64>().ok())
+            .map(|t| t as f64 / 1000.0)
+    };
+    let a78 = freq(6).unwrap_or(0) as f64 / 1e6;
+    let a55 = freq(0).unwrap_or(0) as f64 / 1e6;
+    let t_cpu: Vec<String> = ["thermal_zone24", "thermal_zone25", "thermal_zone26"]
+        .iter()
+        .filter_map(|z| temp(z).map(|t| format!("{:.1}C", t)))
+        .collect();
+    let state = if a78 >= 2.20 { "COLD (peak)" } else if a78 >= 1.80 { "WARM" } else { "HOT (throttled)" };
+    println!(
+        "  [SILICON] A78 {:.2} GHz / A55 {:.2} GHz | cpu-1 [{}] => {}",
+        a78,
+        a55,
+        t_cpu.join(" "),
+        state
+    );
+}
+
+fn get_primecount_cmd() -> std::process::Command {    if let Ok(prefix) = std::env::var("PREFIX") {
         let termux_path = format!("{}/bin/primecount", prefix);
         if std::path::Path::new(&termux_path).exists() {
             return std::process::Command::new(termux_path);
@@ -82,6 +115,16 @@ fn main() {
     for &x in &scales {
         // Run Primecount (warm-up + measure)
         let (pc_res, pc_ms) = run_primecount(x, 8);
+
+        // Strike 3.5 inter-engine cooldown (Tier-3 only): primecount's full
+        // 8-core run heat-soaks the passive chassis; without a cooldown Titan
+        // would benchmark on throttled silicon. Mirrors head_to_head_ultra.
+        // Gated to x >= 1e13 where heat actually distorts results.
+        if x >= 10_000_000_000_000 {
+            println!("  [COOLDOWN] 30s passive silicon cooldown before Titan (x = 1e{})...", (x as f64).log10() as u32);
+            std::thread::sleep(std::time::Duration::from_secs(30));
+            report_silicon_state();
+        }
 
         // Run Titan (warm-up + measure)
         let t0 = Instant::now();

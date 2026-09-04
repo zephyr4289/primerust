@@ -80,9 +80,15 @@ pub fn execute_gourdon_master(
         .unwrap_or(false);
     let shadow_table: Option<PiTable>;
     if shadow_ac {
-        // Native C2 queries reach xpq < x_star^2 (<= x/z on Tier-3 scales);
-        // size the shadow table accordingly (transient, freed after AC).
-        let span = (x / z.max(1)).max(z) + 30;
+        // Strike 3.5: native queries satisfy xpq < x_star^2 (A/C2) and
+        // xpm <= z (C1), with x_star^2 >= z on Tier-3 scales — so a
+        // x_star^2-span table (~3.3 MB at 1e16) replaces the old x/z-span
+        // table (~84 MB), cutting the memory wall ~26x. max() keeps small
+        // scales covered where the ordering could differ.
+        let span = x_star
+            .saturating_mul(x_star)
+            .max(z)
+            .saturating_add(30);
         println!("[TITAN-SHADOW] building shadow PiTable (span = {})...", span);
         shadow_table = Some(PiTable::new(span));
     } else {
@@ -603,8 +609,10 @@ mod tests {
         let base = generate_base_primes(y);
         let mut primes = vec![0u64];
         primes.extend_from_slice(&base);
-        // Native C2 queries satisfy xpq < x / z; C1/A need far less.
-        let pi_table = crate::pi_table::PiTable::new(x / z + 30);
+        // Strike 3.5: native queries fit in x_star^2 (A/C2) / z (C1).
+        let x_star = crate::sigma_l1::get_x_star_gourdon(x, y);
+        let pi_table =
+            crate::pi_table::PiTable::new(x_star.saturating_mul(x_star).max(z) + 30);
 
         let a = compute_a_formula(x, y, &primes, &pi_table);
         let c1 = compute_c1_native(x, y, z, 8, &primes, &pi_table);
