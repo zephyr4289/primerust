@@ -1,0 +1,176 @@
+[1m[92m    Updating[0m crates.io index
+[1m[92m Downloading[0m crates ...
+[1m[92m  Downloaded[0m libc v0.2.189
+[1m[92m   Compiling[0m libc v0.2.189
+[1m[92m   Compiling[0m titan-bench v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-bench)
+[1m[92m   Compiling[0m titan-core v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-core)
+[1m[33mwarning[0m[1m: unused import: `Ordering`[0m
+ [1m[94m--> [0mcrates/titan-bench/src/sampler.rs:6:38
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use std::sync::atomic::{AtomicUsize, Ordering};
+  [1m[94m|[0m                                      [1m[33m^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[92m   Compiling[0m titan-sieve v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-sieve)
+[1m[33mwarning[0m[1m: unnecessary parentheses around block return value[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/adaptive_dispenser.rs:38:17
+   [1m[94m|[0m
+[1m[94m38[0m [1m[94m|[0m                 ((remaining >> 4).clamp(1, 64)) // Big cores take up to 64 segments
+   [1m[94m|[0m                 [1m[33m^[0m                             [1m[33m^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m38[0m [91m- [0m                [91m([0m(remaining >> 4).clamp(1, 64)[91m)[0m // Big cores take up to 64 segments
+[1m[94m38[0m [92m+ [0m                (remaining >> 4).clamp(1, 64) // Big cores take up to 64 segments
+   [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unnecessary parentheses around block return value[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/adaptive_dispenser.rs:40:17
+   [1m[94m|[0m
+[1m[94m40[0m [1m[94m|[0m                 ((remaining >> 6).clamp(1, 16)) // Little cores take up to 16 segments
+   [1m[94m|[0m                 [1m[33m^[0m                             [1m[33m^[0m
+   [1m[94m|[0m
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m40[0m [91m- [0m                [91m([0m(remaining >> 6).clamp(1, 16)[91m)[0m // Little cores take up to 16 segments
+[1m[94m40[0m [92m+ [0m                (remaining >> 6).clamp(1, 16) // Little cores take up to 16 segments
+   [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unused import: `mark_wheel8`[0m
+ [1m[94m--> [0mcrates/titan-sieve/src/b_carry.rs:9:66
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m use crate::kernels::{compute_wheel_deltas_for_prime, first_mark, mark_wheel8};
+  [1m[94m|[0m                                                                  [1m[33m^^^^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused import: `core::arch::aarch64::*`[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/count_resolve.rs:12:5
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m use core::arch::aarch64::*;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: value assigned to `prefix` is never read[0m
+   [1m[94m--> [0mcrates/titan-sieve/src/stream_pipeline.rs:150:9
+    [1m[94m|[0m
+[1m[94m150[0m [1m[94m|[0m         prefix += zeros_cnt;
+    [1m[94m|[0m         [1m[33m^^^^^^^^^^^^^^^^^^^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: maybe it is overwritten before being read?
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: value assigned to `step` is never read[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/wheel30_paced_asm.rs:21:5
+   [1m[94m|[0m
+[1m[94m21[0m [1m[94m|[0m [1m[33m/[0m     core::arch::asm!(
+[1m[94m22[0m [1m[94m|[0m [1m[33m|[0m         "2:",
+[1m[94m23[0m [1m[94m|[0m [1m[33m|[0m         // --- STEP 1: Process Prime A Mark & Prep Prime B ---
+[1m[94m24[0m [1m[94m|[0m [1m[33m|[0m         "ldrb   {tmp_a:w}, [{buf}, {off_a}]",
+[1m[94m...[0m  [1m[33m|[0m
+[1m[94m63[0m [1m[94m|[0m [1m[33m|[0m         options(nostack)
+[1m[94m64[0m [1m[94m|[0m [1m[33m|[0m     );
+   [1m[94m|[0m [1m[33m|_____^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mhelp[0m: maybe it is overwritten before being read?
+
+[1m[33mwarning[0m[1m: field `idx_to_coprime` is never read[0m
+  [1m[94m--> [0mcrates/titan-sieve/src/factor_table.rs:19:5
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m pub struct FactorTableD {
+   [1m[94m|[0m            [1m[94m------------[0m [1m[94mfield in this struct[0m
+[1m[94m...[0m
+[1m[94m19[0m [1m[94m|[0m     idx_to_coprime: [u16; WHEEL2310_COPRIMES],
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `titan-bench` (lib) generated 1 warning (run `cargo fix --lib -p titan-bench` to apply 1 suggestion)
+[1m[92m   Compiling[0m titan-pool v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-pool)
+[1m[33mwarning[0m: `titan-sieve` (lib) generated 7 warnings (run `cargo fix --lib -p titan-sieve` to apply 4 suggestions)
+[1m[33mwarning[0m[1m: unused import: `std::path::Path`[0m
+ [1m[94m--> [0mcrates/titan-pool/src/bin/deep_gate.rs:8:5
+  [1m[94m|[0m
+[1m[94m8[0m [1m[94m|[0m use std::path::Path;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused import: `pi_mt_with_workers`[0m
+  [1m[94m--> [0mcrates/titan-pool/src/bin/deep_gate.rs:12:37
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m use titan_pool::{pi_mt, pi_mt_full, pi_mt_with_workers};
+   [1m[94m|[0m                                     [1m[33m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused variable: `env`[0m
+   [1m[94m--> [0mcrates/titan-bench/src/bin/benchref.rs:228:9
+    [1m[94m|[0m
+[1m[94m228[0m [1m[94m|[0m     let env = snapshot::snapshot();
+    [1m[94m|[0m         [1m[33m^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_env`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `titan-pool` (bin "deep_gate") generated 2 warnings (run `cargo fix --bin "deep_gate" -p titan-pool` to apply 2 suggestions)
+[1m[33mwarning[0m: `titan-bench` (bin "benchref") generated 1 warning (run `cargo fix --bin "benchref" -p titan-bench` to apply 1 suggestion)
+[1m[33mwarning[0m[1m: unused variable: `env`[0m
+   [1m[94m--> [0mcrates/titan-bench/src/bin/survey.rs:364:13
+    [1m[94m|[0m
+[1m[94m364[0m [1m[94m|[0m         let env = snapshot::snapshot();
+    [1m[94m|[0m             [1m[33m^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_env`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: field `part` is never read[0m
+  [1m[94m--> [0mcrates/titan-bench/src/bin/survey.rs:13:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m struct CoreResult {
+   [1m[94m|[0m        [1m[94m----------[0m [1m[94mfield in this struct[0m
+[1m[94m12[0m [1m[94m|[0m     cpu: usize,
+[1m[94m13[0m [1m[94m|[0m     part: Option<u32>,
+   [1m[94m|[0m     [1m[33m^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `CoreResult` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `titan-bench` (bin "survey") generated 2 warnings (run `cargo fix --bin "survey" -p titan-bench` to apply 1 suggestion)
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 13.38s
+[1m[92m   Compiling[0m libc v0.2.189
+[1m[92m   Compiling[0m titan-core v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-core)
+[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.96s
+[1m[92m     Running[0m unittests src/lib.rs (target/debug/deps/titan_core-ca76977d0a016061)
+
+running 30 tests
+test affinity::tests::test_core_class_detection ... ok
+test autotuner::tests::test_autotuner_basic ... ok
+test bit_array::tests::test_bit_get_set_clear_roundtrip ... ok
+test affinity::tests::test_pin_thread_to_cluster ... ok
+test cpu::tests::test_detect_sane ... ok
+test cpu::tests::test_smp_round_robin ... ok
+test bit_array::tests::test_mask_above ... ok
+test cpu::tests::test_pin_target_in_range ... ok
+test huge_alloc::tests::test_huge_page_buffer_empty ... ok
+test phi_tiny::tests::ground_truth_100 ... ok
+test huge_alloc::tests::test_huge_page_buffer_basic ... ok
+test phi_tiny::tests::test_phi_mutant_caught ... ok
+test phi_tiny::tests::test_recursive_k7_and_k8 ... ok
+test redshift_pool::tests::test_redshift_task_space_partitioning ... ok
+test roots::tests::test_edge_identities ... ok
+test roots::tests::test_high_range_lcg_squares ... ok
+test bit_array::tests::test_count_range_differential_against_scalar_oracle ... ok
+test phi_tiny::tests::test_periodicity_and_large_x_identity ... ok
+test roots::tests::test_iroot4_exhaustive ... ok
+test roots::tests::test_mutant_m_root_caught ... ok
+test telemetry::tests::test_hardware_cycles_monotonic ... ok
+test tuning::tests::test_alpha_calibration_at_ultra_scales ... ok
+test tuning::tests::test_gourdon_mathematical_invariants ... ok
+test tuning::tests::test_segment_alignment_invariants ... ok
+test tuning::tests::test_sieve_segment_reduction_1e18 ... ok
+test wheel::tests::test_cand_idx_monotone ... ok
+test wheel::tests::test_wheel_units_and_periodicity ... ok
+test tuning::tests::test_exact_integer_cbrt ... ok
+test roots::tests::test_isqrt_boundary_exhaustive ... ok
+test phi_tiny::tests::test_exhaustive_over_full_period_k1_to_k6 ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
