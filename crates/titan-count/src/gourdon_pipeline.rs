@@ -100,7 +100,15 @@ pub fn execute_gourdon_master(
         if shadow_ac {
             let table = shadow_table.as_ref().expect("shadow table");
             let native_ac =
-                crate::ac_parallel_v2::compute_ac_native_mt(x, y, z, 8, primes, table, 8);
+                {
+                use crate::magic_reciprocal::FastDivTable;
+                let stripped: &[u64] =
+                    if primes.first() == Some(&0) { &primes[1..] } else { primes };
+                let div_table = FastDivTable::build(stripped, x);
+                crate::ac_parallel_v2::compute_ac_native_mt_windowed(
+                    x, y, z, 8, primes, div_table.as_slice(), table, 8,
+                )
+            };
             assert_eq!(
                 native_ac as i128, ffi_ac,
                 "[TITAN-SHADOW] native AC diverged from FFI at x = {}",
@@ -115,7 +123,15 @@ pub fn execute_gourdon_master(
         if shadow_ac {
             let table = shadow_table.as_ref().expect("shadow table");
             let native_ac =
-                crate::ac_parallel_v2::compute_ac_native_mt(x, y, z, 8, primes, table, 8);
+                {
+                use crate::magic_reciprocal::FastDivTable;
+                let stripped: &[u64] =
+                    if primes.first() == Some(&0) { &primes[1..] } else { primes };
+                let div_table = FastDivTable::build(stripped, x);
+                crate::ac_parallel_v2::compute_ac_native_mt_windowed(
+                    x, y, z, 8, primes, div_table.as_slice(), table, 8,
+                )
+            };
             assert_eq!(
                 native_ac as i128, ffi_ac,
                 "[TITAN-SHADOW] native AC diverged from FFI at x = {}",
