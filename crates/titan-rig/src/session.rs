@@ -54,6 +54,9 @@ struct RunSpec {
     label: String,
     argv: Vec<String>,
     env: Vec<(String, String)>,
+    /// Optional path: full stderr bytes are written here (e.g. oracle
+    /// per-unit partial dumps, which are too large for session JSON).
+    capture_stderr: Option<String>,
 }
 
 struct PairSpec {
@@ -115,7 +118,8 @@ fn parse_run(v: &J) -> Result<RunSpec, String> {
             _ => return Err("config: 'env' must be an object".into()),
         }
     }
-    Ok(RunSpec { label, argv, env })
+    let capture_stderr = get_str(v, "capture_stderr")?;
+    Ok(RunSpec { label, argv, env, capture_stderr })
 }
 
 fn parse_config(v: &J) -> Result<Config, String> {
@@ -327,6 +331,7 @@ struct RunResult {
     exit_code: Option<i32>,
     pi_ok: bool,
     stdout_tail: String,
+    stderr_file: Option<String>,
 }
 
 fn run_once(spec: &RunSpec, expect_pi: Option<&str>) -> Result<RunResult, String> {
@@ -343,6 +348,10 @@ fn run_once(spec: &RunSpec, expect_pi: Option<&str>) -> Result<RunResult, String
     let out = cmd.output().map_err(|e| format!("spawn '{}' failed: {}", spec.argv[0], e))?;
     let wall_ms = t0.elapsed().as_secs_f64() * 1000.0;
     let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+    if let Some(path) = &spec.capture_stderr {
+        std::fs::write(path, &out.stderr)
+            .map_err(|e| format!("capture_stderr write '{}' failed: {}", path, e))?;
+    }
     let pi_ok = match expect_pi {
         None => true,
         Some(digits) => stdout.contains(digits),
@@ -355,6 +364,7 @@ fn run_once(spec: &RunSpec, expect_pi: Option<&str>) -> Result<RunResult, String
         exit_code: out.status.code(),
         pi_ok,
         stdout_tail: tail.chars().take(600).collect(),
+        stderr_file: spec.capture_stderr.clone(),
     })
 }
 
@@ -366,6 +376,7 @@ fn run_to_json(r: &RunResult, order: &str, pair: Option<usize>) -> J {
         ("exit_code".into(), r.exit_code.map(|c| J::Num(c as f64)).unwrap_or(J::Null)),
         ("pi_ok".into(), J::Bool(r.pi_ok)),
         ("order".into(), J::Str(order.into())),
+        ("stderr_file".into(), r.stderr_file.clone().map(J::Str).unwrap_or(J::Null)),
         ("pair".into(), pair.map(|p| J::Num(p as f64)).unwrap_or(J::Null)),
         ("stdout_tail".into(), J::Str(r.stdout_tail.clone())),
     ])

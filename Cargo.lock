@@ -33,6 +33,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "titan-golden"
+version = "0.1.0"
+
+[[package]]
 name = "titan-oracle"
 version = "0.1.0"
 

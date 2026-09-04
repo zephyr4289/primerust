@@ -1,0 +1,24 @@
+{
+  "name": "golden-1e16",
+  "seed": 101,
+  "cooldown_secs": 5,
+  "discard_first": 0,
+  "pairs": [],
+  "singles": [
+    {"run": {"label": "golden-ac-1t",
+             "argv": ["/data/data/com.termux/files/home/primerust/target/debug/golden", "AC", "10000000000000000", "1921752", "3843504", "--threads", "1"],
+             "env": {"PC_DUMP": "1"},
+             "capture_stderr": "/data/data/com.termux/files/home/primerust/fixtures/golden/ac_1e16.tsv"},
+     "expect_pi": "90734744872579"},
+    {"run": {"label": "golden-b-1t",
+             "argv": ["/data/data/com.termux/files/home/primerust/target/debug/golden", "B", "10000000000000000", "1921752", "3843504", "--threads", "1"],
+             "env": {"PC_DUMP": "1"},
+             "capture_stderr": "/data/data/com.termux/files/home/primerust/fixtures/golden/b_1e16.tsv"},
+     "expect_pi": "124768874104374"},
+    {"run": {"label": "golden-d-1t",
+             "argv": ["/data/data/com.termux/files/home/primerust/target/debug/golden", "D", "10000000000000000", "1921752", "3843504", "--threads", "1"],
+             "env": {"PC_DUMP": "1"},
+             "capture_stderr": "/data/data/com.termux/files/home/primerust/fixtures/golden/d_1e16.tsv"},
+     "expect_pi": "221235115317419"}
+  ]
+}
