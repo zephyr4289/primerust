@@ -1,0 +1,19 @@
+{
+  "name": "s0-smoke",
+  "seed": 20260904,
+  "cooldown_secs": 1,
+  "discard_first": 1,
+  "logger_cpu": 0,
+  "pairs": [
+    {"a": {"label": "pc-1e9", "argv": ["/data/data/com.termux/files/usr/bin/primecount", "1000000000"]},
+     "b": {"label": "pc-1e9", "argv": ["/data/data/com.termux/files/usr/bin/primecount", "1000000000"]},
+     "expect_pi": "50847534"},
+    {"a": {"label": "pc-1e9", "argv": ["/data/data/com.termux/files/usr/bin/primecount", "1000000000"]},
+     "b": {"label": "pc-1e9", "argv": ["/data/data/com.termux/files/usr/bin/primecount", "1000000000"]},
+     "expect_pi": "50847534"},
+    {"a": {"label": "pc-1e9", "argv": ["/data/data/com.termux/files/usr/bin/primecount", "1000000000"]},
+     "b": {"label": "pc-1e9", "argv": ["/data/data/com.termux/files/usr/bin/primecount", "1000000000"]},
+     "expect_pi": "50847534"}
+  ],
+  "singles": []
+}

@@ -47,6 +47,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "titan-rig"
+version = "0.1.0"
+dependencies = [
+ "titan-bench",
+]
+
+[[package]]
 name = "titan-sieve"
 version = "0.1.0"
 dependencies = [

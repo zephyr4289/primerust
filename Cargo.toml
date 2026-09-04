@@ -6,6 +6,7 @@ members = [
     "crates/titan-pool",
     "crates/titan-count",
     "crates/titan-bench",
+    "crates/titan-rig",
     "crates/titan-oracle",
 ]
 

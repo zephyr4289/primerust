@@ -1,0 +1,11 @@
+[package]
+name = "titan-rig"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+titan-bench = { path = "../titan-bench" }
+
+[[bin]]
+name = "rig"
+path = "src/main.rs"
