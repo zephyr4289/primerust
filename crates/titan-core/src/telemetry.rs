@@ -1,35 +1,48 @@
-//! Phase 6.8: ARM64 Hardware Cycle Counters (telemetry.rs).
+//! Phase 6.8 + CI-1: Hardware Cycle Counters (telemetry.rs).
 //!
-//! Provides direct nanosecond-accurate access to the ARM64 Generic Timer
-//! virtual counter (`cntvct_el0`) and frequency register (`cntfrq_el0`)
-//! without syscall or libc overhead.
+//! - ARM64: `cntvct_el0` / `cntfrq_el0` (no syscall).
+//! - x86_64 CI (Xeon Platinum / Emerald Rapids): `RDTSC` (no syscall).
+//!   RDTSC is constant-TSC, suitable for interval deltas (not wall time).
+//! - Other: fallback 0/1 so intervals saturate to 0 instead of lying.
 
 #[inline(always)]
 pub fn read_hardware_cycles() -> u64 {
-    let cycles: u64;
     #[cfg(target_arch = "aarch64")]
     unsafe {
+        let cycles: u64;
         std::arch::asm!("mrs {}, cntvct_el0", out(reg) cycles, options(nomem, nostack, preserves_flags));
+        return cycles;
     }
-    #[cfg(not(target_arch = "aarch64"))]
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        // _rdtsc is stable for delta measurement on Azure Xeon hosts.
+        return core::arch::x86_64::_rdtsc();
+    }
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     {
-        cycles = 0;
+        0
     }
-    cycles
 }
 
 #[inline(always)]
 pub fn read_timer_frequency() -> u64 {
-    let freq: u64;
     #[cfg(target_arch = "aarch64")]
     unsafe {
+        let freq: u64;
         std::arch::asm!("mrs {}, cntfrq_el0", out(reg) freq, options(nomem, nostack, preserves_flags));
+        return freq.max(1);
     }
-    #[cfg(not(target_arch = "aarch64"))]
+    // x86_64 TSC frequency is not directly readable; Azure Xeon hosts run
+    // ~2.1-3.5GHz. Nominal 3GHz keeps to_ms() approximate but monotonic-safe.
+    // For science use cycle deltas, not converted ms.
+    #[cfg(target_arch = "x86_64")]
     {
-        freq = 1;
+        3_000_000_000
     }
-    freq
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
+    {
+        1
+    }
 }
 
 #[derive(Default, Copy, Clone, Debug)]

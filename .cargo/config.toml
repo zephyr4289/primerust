@@ -1,5 +1,26 @@
 [target.aarch64-linux-android]
 linker = "clang"
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "target-feature=+neon,+crypto",
+    "-C", "opt-level=3",
+]
+
+# CI-1: free GitHub runners (ubuntu-24.04 x64, 4 vCPU Xeon). Portable
+# x86-64-v3 = AVX2 + BMI1/2 + POPCNT + FMA, safe on all Azure hosts
+# (DSv2 through Ddsv5). Native would overfit one host's AVX512.
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+    "-C", "target-cpu=x86-64-v3",
+    "-C", "opt-level=3",
+]
+
+# ARM CI (ubuntu-24.04-arm, Cobalt 100 SMP): NEON baseline, no crypto assumptions.
+[target.aarch64-unknown-linux-gnu]
+rustflags = [
+    "-C", "target-cpu=neoverse-n1",
+    "-C", "opt-level=3",
+]
 
 [build]
 rustflags = [

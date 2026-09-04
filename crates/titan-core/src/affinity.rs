@@ -34,15 +34,31 @@ pub enum ClusterRole {
 }
 
 /// Pins the calling thread to a specific single core.
+///
+/// CI-1: on Android keeps DynamIQ 0..7 map; on all other Linux (CI SMP)
+/// clamps into `0..ncpu` so we never pin 4 threads onto cores 6/7.
 #[cfg(target_os = "linux")]
 pub fn pin_thread_to_core(core_id: usize) -> bool {
-    if core_id >= 64 {
-        return false;
+    #[cfg(target_os = "android")]
+    {
+        if core_id >= 64 {
+            return false;
+        }
+        let mask: u64 = 1u64 << core_id;
+        unsafe {
+            let tid = gettid();
+            sched_setaffinity(tid, std::mem::size_of::<u64>(), &mask) == 0
+        }
     }
-    let mask: u64 = 1u64 << core_id;
-    unsafe {
-        let tid = gettid();
-        sched_setaffinity(tid, std::mem::size_of::<u64>(), &mask) == 0
+    #[cfg(not(target_os = "android"))]
+    {
+        let ncpu = crate::cpu::CpuTopology::detect().ncpu.max(1).min(64);
+        let target = core_id % ncpu;
+        let mask: u64 = 1u64 << target;
+        unsafe {
+            let tid = gettid();
+            sched_setaffinity(tid, std::mem::size_of::<u64>(), &mask) == 0
+        }
     }
 }
 
@@ -58,16 +74,35 @@ pub fn pin_to_core(core_id: usize) -> bool {
 }
 
 /// Binds the current calling OS thread to the designated physical hardware cluster.
+///
+/// CI-1: DynamIQ masks only on Android. On SMP CI all roles map to the
+/// full detected mask (pinning half the VM would strand threads).
 #[cfg(target_os = "linux")]
 pub fn pin_thread_to_cluster(role: ClusterRole) -> bool {
-    let mask: u64 = match role {
-        ClusterRole::BigAnalytical => (1u64 << 6) | (1u64 << 7),
-        ClusterRole::LittleStreaming => (1u64 << 0) | (1u64 << 1) | (1u64 << 2) | (1u64 << 3) | (1u64 << 4) | (1u64 << 5),
-        ClusterRole::AllCores => 0xFF,
-    };
-    unsafe {
-        let tid = gettid();
-        sched_setaffinity(tid, std::mem::size_of::<u64>(), &mask) == 0
+    #[cfg(target_os = "android")]
+    {
+        let mask: u64 = match role {
+            ClusterRole::BigAnalytical => (1u64 << 6) | (1u64 << 7),
+            ClusterRole::LittleStreaming => (1u64 << 0) | (1u64 << 1) | (1u64 << 2) | (1u64 << 3) | (1u64 << 4) | (1u64 << 5),
+            ClusterRole::AllCores => 0xFF,
+        };
+        unsafe {
+            let tid = gettid();
+            sched_setaffinity(tid, std::mem::size_of::<u64>(), &mask) == 0
+        }
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = role;
+        let ncpu = crate::cpu::CpuTopology::detect().ncpu.max(1).min(64);
+        let mut mask: u64 = 0;
+        for c in 0..ncpu {
+            mask |= 1u64 << c;
+        }
+        unsafe {
+            let tid = gettid();
+            sched_setaffinity(tid, std::mem::size_of::<u64>(), &mask) == 0
+        }
     }
 }
 

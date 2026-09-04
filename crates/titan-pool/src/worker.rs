@@ -55,8 +55,16 @@ pub fn bind_worker_affinity(thread_id: usize) {
 }
 
 #[cfg(not(target_os = "android"))]
-pub fn bind_worker_affinity(_thread_id: usize) {
-    // No-op for non-Android platforms
+pub fn bind_worker_affinity(thread_id: usize) {
+    // CI-1 SMP: round-robin across detected ncpu (4 on free CI).
+    // Best-effort: ignore failure (restricted cpusets on shared runners).
+    let target = titan_core::cpu::pin_target(thread_id);
+    unsafe {
+        let mut set: libc::cpu_set_t = core::mem::zeroed();
+        libc::CPU_ZERO(&mut set);
+        libc::CPU_SET(target, &mut set);
+        libc::sched_setaffinity(0, core::mem::size_of::<libc::cpu_set_t>(), &set);
+    }
 }
 
 impl PoolRunner {

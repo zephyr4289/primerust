@@ -7,6 +7,7 @@
 pub mod affinity;
 pub mod arena;
 pub mod bit_array;
+pub mod cpu;
 pub mod phi_tiny;
 pub mod roots;
 pub mod tripwire;
