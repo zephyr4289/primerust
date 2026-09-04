@@ -48,11 +48,16 @@ jobs:
           key: ${{ runner.os }}-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-x64-cargo-
 
-      - name: Build primecount (enemy, Release + OpenMP)
+      - name: Build primecount 7.14 from source (enemy binary + link libs)
         run: |
           {
-            sudo apt-get update -qq && sudo apt-get install -y -qq cmake g++ libprimesieve-dev libomp-dev primecount > /dev/null
+            sudo apt-get update -qq && sudo apt-get install -y -qq cmake g++ libprimesieve-dev time > /dev/null
+            git clone --depth 1 https://github.com/kimwalisch/primecount.git /tmp/primecount
+            cmake -S /tmp/primecount -B /tmp/pc-build -DCMAKE_BUILD_TYPE=Release
+            cmake --build /tmp/pc-build --parallel 4
+            sudo cmake --install /tmp/pc-build && sudo ldconfig
             primecount --version
+            ls /usr/local/lib/libprimecount* /usr/lib/x86_64-linux-gnu/libprimesieve* 2>/dev/null || true
             nproc
           } 2>&1 | tee -a "$LOGDIR/probe.log"
 
@@ -86,7 +91,7 @@ jobs:
         run: |
           {
             cargo build --release -p titan-rig
-            ./target/release/rig run --config crates/titan-rig/sessions/smoke.json || true
+            ./target/release/rig run --config crates/titan-rig/sessions/smoke_ci.json || true
           } 2>&1 | tee "$LOGDIR/rig_smoke.log"
 
       - name: Archive logs to build-logs branch
@@ -160,9 +165,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Build release
+      - name: Build primecount 7.14 from source (enemy binary + link libs)
         run: |
           mkdir -p "$LOGDIR"
+          {
+            sudo apt-get update -qq && sudo apt-get install -y -qq cmake g++ libprimesieve-dev time > /dev/null
+            git clone --depth 1 https://github.com/kimwalisch/primecount.git /tmp/primecount
+            cmake -S /tmp/primecount -B /tmp/pc-build -DCMAKE_BUILD_TYPE=Release
+            cmake --build /tmp/pc-build --parallel 4
+            sudo cmake --install /tmp/pc-build && sudo ldconfig
+            primecount --version
+          } 2>&1 | tee "$LOGDIR/probe.log"
+      - name: Build release
+        run: |
           cargo build --release --workspace 2>&1 | tee "$LOGDIR/build.log"
       - name: Large head-to-head (bit-exact + timing table)
         run: |
