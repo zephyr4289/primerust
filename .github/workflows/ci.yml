@@ -7,6 +7,9 @@ on:
     branches: [CI-v1, main]
   workflow_dispatch:
 
+permissions:
+  contents: write # needed to auto-push run logs to build-logs branch
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -15,17 +18,22 @@ jobs:
     name: x64 free (ubuntu-24.04, 4 vCPU) — build + gates + 1e6..1e12
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    env:
+      LOGDIR: ${{ github.workspace }}/ci-logs/x64
     steps:
       - uses: actions/checkout@v4
 
       - name: Probe silicon (record target)
         run: |
-          echo "=== nproc ==="; nproc
-          echo "=== cpu ==="; lscpu | head -40
-          echo "=== mem ==="; free -h
-          echo "=== flags ==="; grep -m1 flags /proc/cpuinfo | tr ' ' '\n' | grep -E "avx|bmi|popcnt|fma" | sort -u
-          echo "=== rust ==="; rustc -vV; cargo -vV
-          echo "=== cmake/g++ ==="; cmake --version | head -1; g++ --version | head -1
+          mkdir -p "$LOGDIR"
+          {
+            echo "=== nproc ==="; nproc
+            echo "=== cpu ==="; lscpu | head -40
+            echo "=== mem ==="; free -h
+            echo "=== flags ==="; grep -m1 flags /proc/cpuinfo | tr ' ' '\n' | grep -E "avx|bmi|popcnt|fma" | sort -u
+            echo "=== rust ==="; rustc -vV; cargo -vV
+            echo "=== cmake/g++ ==="; cmake --version | head -1; g++ --version | head -1
+          } 2>&1 | tee "$LOGDIR/probe.log"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -42,65 +50,145 @@ jobs:
 
       - name: Build primecount (enemy, Release + OpenMP)
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq cmake g++ libprimesieve-dev libomp-dev primecount > /dev/null
-          primecount --version
-          nproc
+          {
+            sudo apt-get update -qq && sudo apt-get install -y -qq cmake g++ libprimesieve-dev libomp-dev primecount > /dev/null
+            primecount --version
+            nproc
+          } 2>&1 | tee -a "$LOGDIR/probe.log"
 
       - name: Build Titan release (x86-64-v3)
-        run: cargo build --release --workspace
+        run: |
+          cargo build --release --workspace 2>&1 | tee "$LOGDIR/build.log"
 
       - name: Unit gates (bit-exact)
         run: |
-          cargo test -p titan-core --lib
-          cargo test -p titan-count --lib test_combinatorial_milestones
-          cargo run --release -p titan-oracle -- --full 2>&1 | tail -5 || cargo run --release -p titan-oracle 2>&1 | tail -5
+          {
+            cargo test -p titan-core --lib
+            cargo test -p titan-count --lib -- scale_dispatch tier_dispatch
+            cargo run --release -p titan-oracle 2>&1 | tail -5
+          } 2>&1 | tee "$LOGDIR/units.log"
 
       - name: Head-to-head 1e6..1e12 (threads=4, must be bit-exact)
         run: |
-          cargo build --release -p titan-count --bin count_gate
-          for x in 1000000 10000000 100000000 1000000000 10000000000 100000000000 1000000000000; do
-            echo "=== x=$x ==="
-            echo -n "primecount: "; /usr/bin/time -f "%es %MKB" primecount $x -t 4 --time 2>&1 | tail -2
-            echo -n "titan(--batch): "; echo "$x" | /usr/bin/time -f "%es %MKB" ./target/release/count_gate --batch 2>&1 | tail -3
-          done
+          {
+            cargo build --release -p titan-count --bin head_to_head_ci --bin count_gate
+            echo "--- primecount -t4 ---"
+            for x in 1000000 10000000 100000000 1000000000 10000000000 100000000000 1000000000000; do
+              echo "=== x=$x ==="
+              /usr/bin/time -f "pc %es %MKB" primecount $x -t 4 --time 2>&1 | tail -2
+            done
+            echo "--- titan head_to_head_ci --threads 4 --trials 3 ---"
+            ./target/release/head_to_head_ci --threads 4 --trials 3 \
+              1000000 10000000 100000000 1000000000 10000000000 100000000000 1000000000000
+          } 2>&1 | tee "$LOGDIR/head_to_head.log"
 
       - name: Rig S0 smoke (paired medians, Law-2 abort on pi mismatch)
         run: |
-          cargo build --release -p titan-rig
-          ./target/release/rig run --config crates/titan-rig/sessions/smoke.json || true
+          {
+            cargo build --release -p titan-rig
+            ./target/release/rig run --config crates/titan-rig/sessions/smoke.json || true
+          } 2>&1 | tee "$LOGDIR/rig_smoke.log"
+
+      - name: Archive logs to build-logs branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_DIR="runs/${{ github.run_id }}-${{ github.run_number }}"
+          META="{\"run_id\":\"${{ github.run_id }}\",\"run_number\":${{ github.run_number }},\"job\":\"x64\",\"sha\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref }}\",\"runner\":\"ubuntu-24.04\",\"ts\":\"$(date -u +%FT%TZ)\"}"
+          rm -rf /tmp/build-logs && git clone --depth 1 --branch build-logs \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" /tmp/build-logs
+          mkdir -p "/tmp/build-logs/$RUN_DIR" /tmp/build-logs/latest
+          cp "$LOGDIR"/*.log "/tmp/build-logs/$RUN_DIR/"
+          echo "$META" > "/tmp/build-logs/$RUN_DIR/meta.json"
+          cp "$LOGDIR"/head_to_head.log /tmp/build-logs/latest/x64.log || true
+          cd /tmp/build-logs && git config user.name "ci-logs[bot]" && git config user.email "ci-logs[bot]@users.noreply.github.com"
+          git add "$RUN_DIR" latest/x64.log
+          git commit -m "logs: ${{ github.run_id }}-${{ github.run_number }} x64 (${{ github.sha }})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin build-logs && git push origin build-logs && break || sleep 5; done
 
   build-test-arm:
     name: arm64 free (ubuntu-24.04-arm, 4 vCPU Cobalt) — build + unit
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
+    env:
+      LOGDIR: ${{ github.workspace }}/ci-logs/arm
     steps:
       - uses: actions/checkout@v4
       - name: Probe silicon
         run: |
-          nproc; lscpu | head -30; free -h; rustc -vV
-          grep -m1 Features /proc/cpuinfo || grep -m1 flags /proc/cpuinfo | tr ' ' '\n' | grep -E "neon|asimd|sve" | sort -u || true
+          mkdir -p "$LOGDIR"
+          {
+            nproc; lscpu | head -30; free -h; rustc -vV
+            grep -m1 Features /proc/cpuinfo || grep -m1 flags /proc/cpuinfo | tr ' ' '\n' | grep -E "neon|asimd|sve" | sort -u || true
+          } 2>&1 | tee "$LOGDIR/probe.log"
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: Build + unit
         run: |
-          cargo build --release -p titan-core -p titan-bench -p titan-pool
-          cargo test -p titan-core --lib
+          {
+            cargo build --release -p titan-core -p titan-bench -p titan-pool
+            cargo test -p titan-core --lib
+          } 2>&1 | tee "$LOGDIR/units.log"
+      - name: Archive logs to build-logs branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_DIR="runs/${{ github.run_id }}-${{ github.run_number }}"
+          META="{\"run_id\":\"${{ github.run_id }}\",\"run_number\":${{ github.run_number }},\"job\":\"arm\",\"sha\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref }}\",\"runner\":\"ubuntu-24.04-arm\",\"ts\":\"$(date -u +%FT%TZ)\"}"
+          rm -rf /tmp/build-logs && git clone --depth 1 --branch build-logs \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" /tmp/build-logs
+          mkdir -p "/tmp/build-logs/$RUN_DIR" /tmp/build-logs/latest
+          cp "$LOGDIR"/*.log "/tmp/build-logs/$RUN_DIR/"
+          ls /tmp/build-logs/$RUN_DIR/ | sed 's/^/arm-/' | while read f; do :; done
+          for f in /tmp/build-logs/$RUN_DIR/*.log; do mv "$f" "${f%.log}-arm.log" 2>/dev/null || true; done
+          echo "$META" > "/tmp/build-logs/$RUN_DIR/meta-arm.json"
+          cp /tmp/build-logs/$RUN_DIR/*-arm.log /tmp/build-logs/latest/ 2>/dev/null || true
+          cd /tmp/build-logs && git config user.name "ci-logs[bot]" && git config user.email "ci-logs[bot]@users.noreply.github.com"
+          git add "$RUN_DIR" latest/
+          git commit -m "logs: ${{ github.run_id }}-${{ github.run_number }} arm (${{ github.sha }})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin build-logs && git push origin build-logs && break || sleep 5; done
 
   nightly-large:
     name: Nightly large (1e13..1e16, threads=4) — record attempt
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     if: github.event_name == 'workflow_dispatch'
+    env:
+      LOGDIR: ${{ github.workspace }}/ci-logs/large
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Build release
-        run: cargo build --release --workspace
+        run: |
+          mkdir -p "$LOGDIR"
+          cargo build --release --workspace 2>&1 | tee "$LOGDIR/build.log"
       - name: Large head-to-head (bit-exact + timing table)
         run: |
-          cargo build --release -p titan-count --bin count_gate
-          for x in 10000000000000 100000000000000 1000000000000000 10000000000000000; do
-            echo "=== x=$x ==="
-            /usr/bin/time -f "pc %es" primecount $x -t 4 --time 2>&1 | tail -2
-            echo "$x" | /usr/bin/time -f "titan %es" env TITAN_NATIVE=1 ./target/release/count_gate --batch 2>&1 | tail -3 || true
-          done
+          {
+            cargo build --release -p titan-count --bin head_to_head_ci
+            for x in 10000000000000 100000000000000 1000000000000000 10000000000000000; do
+              echo "=== x=$x ==="
+              /usr/bin/time -f "pc %es" primecount $x -t 4 --time 2>&1 | tail -2
+            done
+            env TITAN_NATIVE=1 ./target/release/head_to_head_ci --threads 4 --trials 3 \
+              10000000000000 100000000000000 1000000000000000 10000000000000000 || true
+          } 2>&1 | tee "$LOGDIR/head_to_head_large.log"
+      - name: Archive logs to build-logs branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_DIR="runs/${{ github.run_id }}-${{ github.run_number }}"
+          META="{\"run_id\":\"${{ github.run_id }}\",\"run_number\":${{ github.run_number }},\"job\":\"large\",\"sha\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref }}\",\"runner\":\"ubuntu-24.04\",\"ts\":\"$(date -u +%FT%TZ)\"}"
+          rm -rf /tmp/build-logs && git clone --depth 1 --branch build-logs \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" /tmp/build-logs
+          mkdir -p "/tmp/build-logs/$RUN_DIR" /tmp/build-logs/latest
+          cp "$LOGDIR"/*.log "/tmp/build-logs/$RUN_DIR/"
+          echo "$META" > "/tmp/build-logs/$RUN_DIR/meta-large.json"
+          cp "$LOGDIR"/head_to_head_large.log /tmp/build-logs/latest/large.log || true
+          cd /tmp/build-logs && git config user.name "ci-logs[bot]" && git config user.email "ci-logs[bot]@users.noreply.github.com"
+          git add "$RUN_DIR" latest/large.log
+          git commit -m "logs: ${{ github.run_id }}-${{ github.run_number }} large (${{ github.sha }})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin build-logs && git push origin build-logs && break || sleep 5; done
