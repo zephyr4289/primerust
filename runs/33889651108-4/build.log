@@ -1,3 +1,7 @@
+[1m[92m   Compiling[0m titan-count v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-count)
+[1m[92m   Compiling[0m titan-golden v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-golden)
+[1m[92m   Compiling[0m titan-oracle v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-oracle)
+[1m[92m   Compiling[0m titan-bench v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-bench)
 [1m[33mwarning[0m[1m: unused import: `Ordering`[0m
  [1m[94m--> [0mcrates/titan-bench/src/sampler.rs:6:38
   [1m[94m|[0m
@@ -6,7 +10,8 @@
   [1m[94m|[0m
   [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
-[1m[33mwarning[0m: `titan-bench` (lib) generated 1 warning (run `cargo fix --lib -p titan-bench` to apply 1 suggestion)
+[1m[92m   Compiling[0m titan-core v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-core)
+[1m[92m   Compiling[0m titan-sieve v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-sieve)
 [1m[33mwarning[0m[1m: unnecessary parentheses around block return value[0m
   [1m[94m--> [0mcrates/titan-sieve/src/adaptive_dispenser.rs:38:17
    [1m[94m|[0m
@@ -144,7 +149,29 @@
    [1m[94m|[0m
    [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
+[1m[33mwarning[0m: `titan-bench` (lib) generated 1 warning (run `cargo fix --lib -p titan-bench` to apply 1 suggestion)
+[1m[33mwarning[0m[1m: unused variable: `env`[0m
+   [1m[94m--> [0mcrates/titan-bench/src/bin/survey.rs:364:13
+    [1m[94m|[0m
+[1m[94m364[0m [1m[94m|[0m         let env = snapshot::snapshot();
+    [1m[94m|[0m             [1m[33m^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_env`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: field `part` is never read[0m
+  [1m[94m--> [0mcrates/titan-bench/src/bin/survey.rs:13:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m struct CoreResult {
+   [1m[94m|[0m        [1m[94m----------[0m [1m[94mfield in this struct[0m
+[1m[94m12[0m [1m[94m|[0m     cpu: usize,
+[1m[94m13[0m [1m[94m|[0m     part: Option<u32>,
+   [1m[94m|[0m     [1m[33m^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `CoreResult` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
 [1m[33mwarning[0m: `titan-sieve` (lib) generated 16 warnings (run `cargo fix --lib -p titan-sieve` to apply 14 suggestions)
+[1m[92m   Compiling[0m titan-pool v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-pool)
 [1m[33mwarning[0m[1m: unused import: `titan_core::roots::isqrt`[0m
  [1m[94m--> [0mcrates/titan-count/src/ftd_block.rs:8:5
   [1m[94m|[0m
@@ -319,25 +346,15 @@
 [1m[94m18[0m [1m[94m|[0m     word_count: usize,
    [1m[94m|[0m     [1m[33m^^^^^^^^^^[0m
 
-[1m[33mwarning[0m: `titan-count` (lib) generated 27 warnings (run `cargo fix --lib -p titan-count` to apply 24 suggestions)
-[1m[92m   Compiling[0m titan-count v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-count)
 [1m[91merror[0m[1m: linking with `cc` failed: exit status: 1[0m
   [1m[94m|[0m
-  [1m[94m= [0m[1mnote[0m:  "cc" "-m64" "<26 object files omitted>" "-Wl,--as-needed" "-Wl,-Bstatic" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-*.rlib" "-Wl,-Bdynamic" "-lprimecount" "-lprimesieve" "-lstdc++" "-lgomp" "-lgcc_s" "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-L" "/home/runner/work/primerust/primerust/target/release/deps/rustcOJp9kk/raw-dylibs" "-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld" "-fuse-ld=lld" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L" "/usr/lib/aarch64-linux-gnu" "-L" "/usr/lib/x86_64-linux-gnu" "-L" "/usr/local/lib" "-L" "/data/data/com.termux/files/home/primecount-ref/build" "-L" "/data/data/com.termux/files/home/primecount-ref/build/lib/primesieve" "-L" "/data/data/com.termux/files/usr/lib" "-L" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o" "/home/runner/work/primerust/primerust/target/release/deps/head_to_head_ci-cc9ab1b03c5f19dd" "-Wl,--gc-sections" "-pie" "-Wl,-z,relro,-z,now" "-Wl,-O1" "-Wl,--strip-debug" "-nodefaultlibs"
+  [1m[94m= [0m[1mnote[0m:  "cc" "-m64" "<20 object files omitted>" "-Wl,--as-needed" "-Wl,-Bdynamic" "-lprimecount" "-lprimesieve" "-lstdc++" "-lgomp" "-Wl,-Bstatic" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-*.rlib" "-Wl,-Bdynamic" "-lgcc_s" "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-L" "/home/runner/work/primerust/primerust/target/release/deps/rustchx07G2/raw-dylibs" "-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld" "-fuse-ld=lld" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L" "/data/data/com.termux/files/home/primecount-oracle/build" "-L" "/data/data/com.termux/files/home/primecount-oracle/build/lib/primesieve" "-L" "/data/data/com.termux/files/usr/lib" "-L" "/usr/lib/aarch64-linux-gnu" "-L" "/usr/lib/x86_64-linux-gnu" "-L" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o" "/home/runner/work/primerust/primerust/target/release/deps/golden-0ff81cf922feea78" "-Wl,--gc-sections" "-pie" "-Wl,-z,relro,-z,now" "-Wl,-O1" "-Wl,--strip-debug" "-nodefaultlibs"
   [1m[94m= [0m[1mnote[0m: some arguments are omitted. use `--verbose` to show all linker arguments
-  [1m[94m= [0m[1mnote[0m: rust-lld: error: undefined symbol: primecount::D(long, long, long, long, long, int, bool)
-          >>> referenced by titan_count.c4524b29fcfb8708-cgu.0
-          >>>               /home/runner/work/primerust/primerust/target/release/deps/head_to_head_ci-cc9ab1b03c5f19dd.titan_count-359604fad7ec763f.titan_count.c4524b29fcfb8708-cgu.0.rcgu.o.rcgu.o:(std::sys::backtrace::__rust_begin_short_backtrace::<titan_count::gourdon_pipeline::execute_gourdon_master::{closure#1}::{closure#0}, i128>)
-          >>> did you mean: primecount::D(long, long, long, long, int, bool)
-          >>> defined in: /usr/local/lib/libprimecount.a(D.cpp.o)
-          
-          rust-lld: error: undefined symbol: primecount::D(__int128, long, long, long, __int128, int, bool)
-          >>> referenced by titan_count.c4524b29fcfb8708-cgu.0
-          >>>               /home/runner/work/primerust/primerust/target/release/deps/head_to_head_ci-cc9ab1b03c5f19dd.titan_count-359604fad7ec763f.titan_count.c4524b29fcfb8708-cgu.0.rcgu.o.rcgu.o:(std::sys::backtrace::__rust_begin_short_backtrace::<titan_count::gourdon_pipeline::execute_gourdon_master::{closure#1}::{closure#0}, i128>)
-          >>> did you mean: primecount::D(__int128, long, long, long, int, bool)
-          >>> defined in: /usr/local/lib/libprimecount.a(D.cpp.o)
+  [1m[94m= [0m[1mnote[0m: rust-lld: error: unable to find library -lprimecount
           collect2: error: ld returned 1 exit status
           
 
-[1m[91merror[0m: could not compile `titan-count` (bin "head_to_head_ci") due to 1 previous error
+[1m[91merror[0m: could not compile `titan-golden` (bin "golden") due to 1 previous error
 [1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+[1m[33mwarning[0m: `titan-bench` (bin "survey") generated 2 warnings (run `cargo fix --bin "survey" -p titan-bench` to apply 1 suggestion)
+[1m[33mwarning[0m: `titan-count` (lib) generated 27 warnings (run `cargo fix --lib -p titan-count` to apply 24 suggestions)

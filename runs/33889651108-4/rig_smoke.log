@@ -1,0 +1,701 @@
+[1m[33mwarning[0m[1m: unused import: `Ordering`[0m
+ [1m[94m--> [0mcrates/titan-bench/src/sampler.rs:6:38
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use std::sync::atomic::{AtomicUsize, Ordering};
+  [1m[94m|[0m                                      [1m[33m^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `titan-bench` (lib) generated 1 warning (run `cargo fix --lib -p titan-bench` to apply 1 suggestion)
+[1m[92m   Compiling[0m titan-rig v0.1.0 (/home/runner/work/primerust/primerust/crates/titan-rig)
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+   [1m[94m--> [0mcrates/titan-rig/src/session.rs:564:20
+    [1m[94m|[0m
+[1m[94m564[0m [1m[94m|[0m         let med = |mut v: Vec<f64>| -> J {
+    [1m[94m|[0m                    [1m[94m----[0m[1m[33m^[0m
+    [1m[94m|[0m                    [1m[94m|[0m
+    [1m[94m|[0m                    [1m[94mhelp: remove this `mut`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: variable does not need to be mutable[0m
+   [1m[94m--> [0mcrates/titan-rig/src/session.rs:426:9
+    [1m[94m|[0m
+[1m[94m426[0m [1m[94m|[0m     let mut total_runs = cfg.pairs.len() * 2 + cfg.singles.len();
+    [1m[94m|[0m         [1m[94m----[0m[1m[33m^^^^^^^^^^[0m
+    [1m[94m|[0m         [1m[94m|[0m
+    [1m[94m|[0m         [1m[94mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m: function `emit` is never used[0m
+   [1m[94m--> [0mcrates/titan-rig/src/minjson.rs:298:8
+    [1m[94m|[0m
+[1m[94m298[0m [1m[94m|[0m pub fn emit(v: &J) -> String {
+    [1m[94m|[0m        [1m[33m^^^^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `titan-rig` (bin "rig") generated 3 warnings (run `cargo fix --bin "rig" -p titan-rig` to apply 2 suggestions)
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 4.43s
+{
+  "tool": "titan-rig run (Phase 0 S0)",
+  "name": "s0-smoke-ci",
+  "seed": 20260904,
+  "titan_sha": "ac69f0318be79347cf1c42efaeaa8f7a2906eb39",
+  "opponent_sha256": "4bd8031de9a3e073da9f22360979bfa7e355b94ab576e850ecadeebfa07add50",
+  "battery_pct": null,
+  "airplane_mode": null,
+  "screen": null,
+  "charging": null,
+  "loadavg_start": 2.37,
+  "logger_pin": "unpinned",
+  "cooldown_secs": 1,
+  "discard_first": 1,
+  "runs": [
+    {
+      "label": "pc-1e9",
+      "argv": [
+        "primecount",
+        "1000000000",
+        "-t",
+        "4"
+      ],
+      "wall_ms": 2.467632,
+      "exit_code": 0,
+      "pi_ok": true,
+      "order": "a",
+      "stderr_file": null,
+      "pair": 0,
+      "stdout_tail": "50847534"
+    },
+    {
+      "label": "pc-1e9",
+      "argv": [
+        "primecount",
+        "1000000000",
+        "-t",
+        "4"
+      ],
+      "wall_ms": 2.694064,
+      "exit_code": 0,
+      "pi_ok": true,
+      "order": "b",
+      "stderr_file": null,
+      "pair": 0,
+      "stdout_tail": "50847534"
+    },
+    {
+      "label": "pc-1e9",
+      "argv": [
+        "primecount",
+        "1000000000",
+        "-t",
+        "4"
+      ],
+      "wall_ms": 2.759315,
+      "exit_code": 0,
+      "pi_ok": true,
+      "order": "b",
+      "stderr_file": null,
+      "pair": 1,
+      "stdout_tail": "50847534"
+    },
+    {
+      "label": "pc-1e9",
+      "argv": [
+        "primecount",
+        "1000000000",
+        "-t",
+        "4"
+      ],
+      "wall_ms": 2.820128,
+      "exit_code": 0,
+      "pi_ok": true,
+      "order": "a",
+      "stderr_file": null,
+      "pair": 1,
+      "stdout_tail": "50847534"
+    },
+    {
+      "label": "pc-1e9",
+      "argv": [
+        "primecount",
+        "1000000000",
+        "-t",
+        "4"
+      ],
+      "wall_ms": 2.728287,
+      "exit_code": 0,
+      "pi_ok": true,
+      "order": "b",
+      "stderr_file": null,
+      "pair": 2,
+      "stdout_tail": "50847534"
+    },
+    {
+      "label": "pc-1e9",
+      "argv": [
+        "primecount",
+        "1000000000",
+        "-t",
+        "4"
+      ],
+      "wall_ms": 2.770276,
+      "exit_code": 0,
+      "pi_ok": true,
+      "order": "a",
+      "stderr_file": null,
+      "pair": 2,
+      "stdout_tail": "50847534"
+    }
+  ],
+  "pairs": [
+    {
+      "i": 0,
+      "order": "ab",
+      "kept": false,
+      "d_ms": 0.22643199999999997
+    },
+    {
+      "i": 1,
+      "order": "ba",
+      "kept": true,
+      "d_ms": -0.060813000000000006
+    },
+    {
+      "i": 2,
+      "order": "ba",
+      "kept": true,
+      "d_ms": -0.041989000000000054
+    }
+  ],
+  "summary": {
+    "kept_pairs": 2,
+    "median_d_ms": -0.041989000000000054,
+    "mad_d_ms": 0.018823999999999952,
+    "sign_frac_b_slower": 0,
+    "median_d_ab_order": null,
+    "median_d_ba_order": -0.041989000000000054,
+    "per_label_p50": [
+      {
+        "label": "pc-1e9",
+        "n": 4,
+        "p50_ms": 2.770276,
+        "mad_ms": 0.041989000000000054,
+        "min_ms": 2.728287,
+        "max_ms": 2.820128
+      }
+    ]
+  },
+  "freq_trace": [
+    {
+      "t_ms": 0,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 100,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 200,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 300,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 400,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 500,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 600,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 700,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 801,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 901,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1001,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1101,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1201,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1301,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1401,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1502,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1602,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1702,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1802,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 1902,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2002,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2103,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2203,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2303,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2403,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2503,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2603,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2703,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2803,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 2904,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3004,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3104,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3204,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3304,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3404,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3504,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3605,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3705,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3805,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 3905,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4005,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4105,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4206,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4306,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4406,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4506,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4606,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4706,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4806,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 4906,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    },
+    {
+      "t_ms": 5007,
+      "cpu_khz": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "zones": []
+    }
+  ]
+}

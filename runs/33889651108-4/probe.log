@@ -1,0 +1,223 @@
+=== nproc ===
+4
+=== cpu ===
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           48 bits physical, 48 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  4
+On-line CPU(s) list:                     0-3
+Vendor ID:                               AuthenticAMD
+Model name:                              AMD EPYC 7763 64-Core Processor
+CPU family:                              25
+Model:                                   1
+Thread(s) per core:                      2
+Core(s) per socket:                      2
+Socket(s):                               1
+Stepping:                                1
+BogoMIPS:                                4890.85
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm
+Virtualization:                          AMD-V
+Hypervisor vendor:                       Microsoft
+Virtualization type:                     full
+L1d cache:                               64 KiB (2 instances)
+L1i cache:                               64 KiB (2 instances)
+L2 cache:                                1 MiB (2 instances)
+L3 cache:                                32 MiB (1 instance)
+NUMA node(s):                            1
+NUMA node0 CPU(s):                       0-3
+Vulnerability Gather data sampling:      Not affected
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Not affected
+Vulnerability Itlb multihit:             Not affected
+Vulnerability L1tf:                      Not affected
+Vulnerability Mds:                       Not affected
+Vulnerability Meltdown:                  Not affected
+Vulnerability Mmio stale data:           Not affected
+Vulnerability Old microcode:             Not affected
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Not affected
+Vulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode
+Vulnerability Spec store bypass:         Vulnerable
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+=== mem ===
+               total        used        free      shared  buff/cache   available
+Mem:            15Gi       1.3Gi        12Gi        41Mi       2.4Gi        14Gi
+Swap:          3.0Gi          0B       3.0Gi
+=== flags ===
+avx
+avx2
+bmi1
+bmi2
+fma
+popcnt
+=== rust ===
+rustc 1.98.0 (88d9e12ae 2026-08-18)
+binary: rustc
+commit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea
+commit-date: 2026-08-18
+host: x86_64-unknown-linux-gnu
+release: 1.98.0
+LLVM version: 22.1.8
+cargo 1.98.0 (797e8a9bc 2026-08-05)
+release: 1.98.0
+commit-hash: 797e8a9bca276c1c9f9f738d2a20f484fa4eea9d
+commit-date: 2026-08-05
+host: x86_64-unknown-linux-gnu
+libgit2: 1.9.4 (sys:0.21.0 vendored)
+libcurl: 8.21.0-DEV (sys:0.4.90+curl-8.21.0 vendored ssl:OpenSSL/3.6.3)
+ssl: OpenSSL 3.6.3 9 Jun 2026
+os: Ubuntu 24.4.0 (noble) [64-bit]
+=== cmake/g++ ===
+cmake version 3.31.6
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Cloning into '/tmp/primecount'...
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Setting CMAKE_VISIBILITY_INLINES_HIDDEN = ON
+-- Performing Test multiarch_x86_popcnt
+-- Performing Test multiarch_x86_popcnt - Success
+-- Performing Test multiarch_avx512_vpopcnt
+-- Performing Test multiarch_avx512_vpopcnt - Success
+-- Performing Test compiler_supports_cpp11
+-- Performing Test compiler_supports_cpp11 - Success
+-- Performing Test int128
+-- Performing Test int128 - Success
+-- Performing Test OpenMP
+-- Performing Test OpenMP - Success
+-- Performing Test LLVM_OpenMP
+-- Performing Test LLVM_OpenMP - Failed
+-- Performing Test multiarch_avx512_bw
+-- Performing Test multiarch_avx512_bw - Success
+-- Performing Test multiarch_avx512_vbmi2
+-- Performing Test multiarch_avx512_vbmi2 - Success
+-- Performing Test atomic64
+-- Performing Test atomic64 - Success
+-- Configuring done (4.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/pc-build
+[  1%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/api-c.cpp.o
+[  2%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/api.cpp.o
+[  4%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/CountPrintPrimes.cpp.o
+[  5%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/CpuInfo.cpp.o
+[  6%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/Erat.cpp.o
+[  8%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/EratSmall.cpp.o
+[  9%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/EratMedium.cpp.o
+[ 10%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/EratBig.cpp.o
+[ 12%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/iterator-c.cpp.o
+[ 13%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/iterator.cpp.o
+[ 14%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/IteratorHelper.cpp.o
+[ 16%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/LookupTables.cpp.o
+[ 17%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/MemoryPool.cpp.o
+[ 18%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/PrimeGenerator.cpp.o
+[ 20%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/nthPrime.cpp.o
+[ 21%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/ParallelSieve.cpp.o
+[ 22%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/popcount.cpp.o
+[ 24%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/PreSieve.cpp.o
+[ 25%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/PrimeSieveClass.cpp.o
+[ 26%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/RiemannR.cpp.o
+[ 28%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/SievingPrimes.cpp.o
+[ 29%] Building CXX object lib/primesieve/CMakeFiles/libprimesieve-static.dir/src/arch/x86/cpuid.cpp.o
+[ 30%] Linking CXX static library libprimesieve.a
+[ 30%] Built target libprimesieve-static
+[ 32%] Building CXX object CMakeFiles/libprimecount-static.dir/src/api.cpp.o
+[ 33%] Building CXX object CMakeFiles/libprimecount-static.dir/src/api_c.cpp.o
+[ 34%] Building CXX object CMakeFiles/libprimecount-static.dir/src/FactorTable.cpp.o
+[ 36%] Building CXX object CMakeFiles/libprimecount-static.dir/src/BitSieve240.cpp.o
+[ 37%] Building CXX object CMakeFiles/libprimecount-static.dir/src/RiemannR.cpp.o
+[ 38%] Building CXX object CMakeFiles/libprimecount-static.dir/src/P2.cpp.o
+[ 40%] Building CXX object CMakeFiles/libprimecount-static.dir/src/P3.cpp.o
+[ 41%] Building CXX object CMakeFiles/libprimecount-static.dir/src/PhiTiny.cpp.o
+[ 42%] Building CXX object CMakeFiles/libprimecount-static.dir/src/PiTable.cpp.o
+[ 44%] Building CXX object CMakeFiles/libprimecount-static.dir/src/S1.cpp.o
+[ 45%] Building CXX object CMakeFiles/libprimecount-static.dir/src/sieve/Sieve.cpp.o
+[ 46%] Building CXX object CMakeFiles/libprimecount-static.dir/src/sieve/pre_sieve.cpp.o
+[ 48%] Building CXX object CMakeFiles/libprimecount-static.dir/src/LoadBalancerP2.cpp.o
+[ 49%] Building CXX object CMakeFiles/libprimecount-static.dir/src/LoadBalancerS2.cpp.o
+[ 50%] Building CXX object CMakeFiles/libprimecount-static.dir/src/LogarithmicIntegral.cpp.o
+[ 52%] Building CXX object CMakeFiles/libprimecount-static.dir/src/StatusS2.cpp.o
+[ 53%] Building CXX object CMakeFiles/libprimecount-static.dir/src/generate_primes.cpp.o
+[ 54%] Building CXX object CMakeFiles/libprimecount-static.dir/src/nth_prime.cpp.o
+[ 56%] Building CXX object CMakeFiles/libprimecount-static.dir/src/nth_prime_sieve.cpp.o
+[ 57%] Building CXX object CMakeFiles/libprimecount-static.dir/src/phi.cpp.o
+[ 58%] Building CXX object CMakeFiles/libprimecount-static.dir/src/phi_vector.cpp.o
+[ 60%] Building CXX object CMakeFiles/libprimecount-static.dir/src/pi_legendre.cpp.o
+[ 61%] Building CXX object CMakeFiles/libprimecount-static.dir/src/pi_lehmer.cpp.o
+[ 62%] Building CXX object CMakeFiles/libprimecount-static.dir/src/pi_meissel.cpp.o
+[ 64%] Building CXX object CMakeFiles/libprimecount-static.dir/src/pi_primesieve.cpp.o
+[ 65%] Building CXX object CMakeFiles/libprimecount-static.dir/src/print.cpp.o
+[ 66%] Building CXX object CMakeFiles/libprimecount-static.dir/src/util.cpp.o
+[ 68%] Building CXX object CMakeFiles/libprimecount-static.dir/src/lmo/pi_lmo1.cpp.o
+[ 69%] Building CXX object CMakeFiles/libprimecount-static.dir/src/lmo/pi_lmo2.cpp.o
+[ 70%] Building CXX object CMakeFiles/libprimecount-static.dir/src/lmo/pi_lmo3.cpp.o
+[ 72%] Building CXX object CMakeFiles/libprimecount-static.dir/src/lmo/pi_lmo4.cpp.o
+[ 73%] Building CXX object CMakeFiles/libprimecount-static.dir/src/lmo/pi_lmo5.cpp.o
+[ 74%] Building CXX object CMakeFiles/libprimecount-static.dir/src/lmo/pi_lmo_parallel.cpp.o
+[ 76%] Building CXX object CMakeFiles/libprimecount-static.dir/src/deleglise-rivat/S2_easy.cpp.o
+[ 77%] Building CXX object CMakeFiles/libprimecount-static.dir/src/deleglise-rivat/S2_hard.cpp.o
+[ 78%] Building CXX object CMakeFiles/libprimecount-static.dir/src/deleglise-rivat/S2_trivial.cpp.o
+[ 80%] Building CXX object CMakeFiles/libprimecount-static.dir/src/deleglise-rivat/pi_deleglise_rivat.cpp.o
+[ 81%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/pi_gourdon.cpp.o
+[ 82%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/Phi0.cpp.o
+[ 84%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/AC.cpp.o
+[ 85%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/B.cpp.o
+[ 86%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/D.cpp.o
+[ 88%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/LoadBalancerAC.cpp.o
+[ 89%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/SegmentedPiTable.cpp.o
+[ 90%] Building CXX object CMakeFiles/libprimecount-static.dir/src/gourdon/Sigma.cpp.o
+[ 92%] Building CXX object CMakeFiles/libprimecount-static.dir/src/arch/x86/cpuid.cpp.o
+[ 93%] Linking CXX static library libprimecount.a
+[ 93%] Built target libprimecount-static
+[ 94%] Building CXX object CMakeFiles/primecount.dir/src/app/CmdOptions.cpp.o
+[ 96%] Building CXX object CMakeFiles/primecount.dir/src/app/main.cpp.o
+[ 97%] Building CXX object CMakeFiles/primecount.dir/src/app/help.cpp.o
+[ 98%] Building CXX object CMakeFiles/primecount.dir/src/app/test.cpp.o
+[100%] Linking CXX executable primecount
+[100%] Built target primecount
+-- Install configuration: "Release"
+-- Installing: /usr/local/lib/libprimesieve.a
+-- Installing: /usr/local/include/primesieve.h
+-- Installing: /usr/local/include/primesieve.hpp
+-- Installing: /usr/local/include/primesieve/iterator.h
+-- Installing: /usr/local/include/primesieve/iterator.hpp
+-- Installing: /usr/local/include/primesieve/StorePrimes.hpp
+-- Installing: /usr/local/include/primesieve/primesieve_error.hpp
+-- Installing: /usr/local/lib/cmake/primesieve/primesieveConfig.cmake
+-- Installing: /usr/local/lib/cmake/primesieve/primesieveConfigVersion.cmake
+-- Installing: /usr/local/lib/cmake/primesieve/primesieveStatic.cmake
+-- Installing: /usr/local/lib/cmake/primesieve/primesieveStatic-release.cmake
+-- Installing: /usr/local/lib/pkgconfig/primesieve.pc
+-- Installing: /usr/local/lib/libprimecount.a
+-- Installing: /usr/local/bin/primecount
+-- Installing: /usr/local/include/primecount.h
+-- Installing: /usr/local/include/primecount.hpp
+-- Installing: /usr/local/lib/cmake/primecount/primecountConfig.cmake
+-- Installing: /usr/local/lib/cmake/primecount/primecountConfigVersion.cmake
+-- Installing: /usr/local/lib/cmake/primecount/primecountStatic.cmake
+-- Installing: /usr/local/lib/cmake/primecount/primecountStatic-release.cmake
+-- Installing: /usr/local/share/man/man1/primecount.1
+-- Installing: /usr/local/lib/pkgconfig/primecount.pc
+primecount 8.7, <https://github.com/kimwalisch/primecount>
+Copyright (C) 2013 - 2026 Kim Walisch
+BSD 2-Clause License <https://opensource.org/licenses/BSD-2-Clause>
+/usr/lib/x86_64-linux-gnu/libprimesieve.a
+/usr/lib/x86_64-linux-gnu/libprimesieve.so
+/usr/lib/x86_64-linux-gnu/libprimesieve.so.12
+/usr/lib/x86_64-linux-gnu/libprimesieve.so.12.0.0
+/usr/local/lib/libprimecount.a
+4
