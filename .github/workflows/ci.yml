@@ -1,0 +1,106 @@
+name: CI-v1 Titan vs primecount (free runners)
+
+on:
+  push:
+    branches: [CI-v1, main]
+  pull_request:
+    branches: [CI-v1, main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test-x64:
+    name: x64 free (ubuntu-24.04, 4 vCPU) — build + gates + 1e6..1e12
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe silicon (record target)
+        run: |
+          echo "=== nproc ==="; nproc
+          echo "=== cpu ==="; lscpu | head -40
+          echo "=== mem ==="; free -h
+          echo "=== flags ==="; grep -m1 flags /proc/cpuinfo | tr ' ' '\n' | grep -E "avx|bmi|popcnt|fma" | sort -u
+          echo "=== rust ==="; rustc -vV; cargo -vV
+          echo "=== cmake/g++ ==="; cmake --version | head -1; g++ --version | head -1
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-x64-cargo-
+
+      - name: Build primecount (enemy, Release + OpenMP)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq cmake g++ libprimesieve-dev libomp-dev primecount > /dev/null
+          primecount --version
+          nproc
+
+      - name: Build Titan release (x86-64-v3)
+        run: cargo build --release --workspace
+
+      - name: Unit gates (bit-exact)
+        run: |
+          cargo test -p titan-core --lib
+          cargo test -p titan-count --lib test_combinatorial_milestones
+          cargo run --release -p titan-oracle -- --full 2>&1 | tail -5 || cargo run --release -p titan-oracle 2>&1 | tail -5
+
+      - name: Head-to-head 1e6..1e12 (threads=4, must be bit-exact)
+        run: |
+          cargo build --release -p titan-count --bin count_gate
+          for x in 1000000 10000000 100000000 1000000000 10000000000 100000000000 1000000000000; do
+            echo "=== x=$x ==="
+            echo -n "primecount: "; /usr/bin/time -f "%es %MKB" primecount $x -t 4 --time 2>&1 | tail -2
+            echo -n "titan(--batch): "; echo "$x" | /usr/bin/time -f "%es %MKB" ./target/release/count_gate --batch 2>&1 | tail -3
+          done
+
+      - name: Rig S0 smoke (paired medians, Law-2 abort on pi mismatch)
+        run: |
+          cargo build --release -p titan-rig
+          ./target/release/rig run --config crates/titan-rig/sessions/smoke.json || true
+
+  build-test-arm:
+    name: arm64 free (ubuntu-24.04-arm, 4 vCPU Cobalt) — build + unit
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe silicon
+        run: |
+          nproc; lscpu | head -30; free -h; rustc -vV
+          grep -m1 Features /proc/cpuinfo || grep -m1 flags /proc/cpuinfo | tr ' ' '\n' | grep -E "neon|asimd|sve" | sort -u || true
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build + unit
+        run: |
+          cargo build --release -p titan-core -p titan-bench -p titan-pool
+          cargo test -p titan-core --lib
+
+  nightly-large:
+    name: Nightly large (1e13..1e16, threads=4) — record attempt
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build release
+        run: cargo build --release --workspace
+      - name: Large head-to-head (bit-exact + timing table)
+        run: |
+          cargo build --release -p titan-count --bin count_gate
+          for x in 10000000000000 100000000000000 1000000000000000 10000000000000000; do
+            echo "=== x=$x ==="
+            /usr/bin/time -f "pc %es" primecount $x -t 4 --time 2>&1 | tail -2
+            echo "$x" | /usr/bin/time -f "titan %es" env TITAN_NATIVE=1 ./target/release/count_gate --batch 2>&1 | tail -3 || true
+          done
