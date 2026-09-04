@@ -106,3 +106,7 @@ path = "src/bin/census_v4.rs"
 name = "head_to_head_ultra"
 path = "src/bin/head_to_head_ultra.rs"
 
+[[bin]]
+name = "head_to_head_ci"
+path = "src/bin/head_to_head_ci.rs"
+

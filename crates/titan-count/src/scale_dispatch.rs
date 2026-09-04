@@ -28,8 +28,9 @@ impl ScaleDispatch {
     }
 
     /// Selects optimal dial configuration based on scale x and system cores
+    /// CI-2: threads resolve via CpuTopology (4 on free CI, 8 on SD4G2).
     pub fn select(x: u64, requested_threads: usize) -> DialConfig {
-        let threads = requested_threads.clamp(1, 8);
+        let threads = titan_core::cpu::CpuTopology::detect().optimal_threads(requested_threads);
 
         if x <= 10_000_000_000 {
             // ST dispatch: zero thread synchronization / spawn tax
@@ -62,7 +63,8 @@ mod tests {
         assert_eq!(cfg_small.use_z_split, false);
 
         let cfg_large = ScaleDispatch::select(100_000_000_000_000, 8);
-        assert_eq!(cfg_large.num_threads, 8);
+        let expect_threads = titan_core::cpu::CpuTopology::detect().optimal_threads(8);
+        assert_eq!(cfg_large.num_threads, expect_threads);
         assert!(cfg_large.alpha_y > 1.0);
         assert_eq!(cfg_large.beta, 1.5);
     }

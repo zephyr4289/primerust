@@ -13,7 +13,10 @@ pub struct TierDispatch;
 impl TierDispatch {
     /// Evaluates pi(x) using the optimal multi-scale tier engine with transparent execution tracing.
     /// Phase 9.2.x: strict 3-tier match (Tier 3 >= 1e13 always routes to pure-Rust Gourdon).
+    /// CI-2: thread requests resolve via CpuTopology (free CI = 4, SD4G2 = 8).
+    /// Thresholds unchanged in CI-2 (measure before moving Gourdon earlier).
     pub fn count(x: u64, num_threads: usize) -> u64 {
+        let threads = titan_core::cpu::CpuTopology::detect().optimal_threads(num_threads);
         match x {
             0..=10_000_000 => {
                 // Tier 1: Single-Threaded Cortex-A78 L1D Bitset
@@ -27,16 +30,16 @@ impl TierDispatch {
                     let mut counter = LehmerCounter::new();
                     counter.count(x)
                 } else {
-                    println!("[TITAN-DISPATCH] Tier 2: Multi-Threaded Combinatorial Lehmer (x = {}, threads = {})", x, num_threads);
+                    println!("[TITAN-DISPATCH] Tier 2: Multi-Threaded Combinatorial Lehmer (x = {}, threads = {} resolved {})", x, num_threads, threads);
                     let counter = LehmerCounter::new();
-                    counter.count_mt(x, num_threads)
+                    counter.count_mt(x, threads)
                 }
             }
             _ => {
                 // Tier 3: Pure-Rust Xavier Gourdon Engine (x >= 1e13)
                 // Hard rule: never silently run Lehmer on Tier 3 (see GourdonHetero gating).
-                println!("[TITAN-DISPATCH] Tier 3: Heterogeneous Xavier Gourdon Engine (x = {}, threads = {})", x, num_threads);
-                GourdonHetero::count(x, num_threads)
+                println!("[TITAN-DISPATCH] Tier 3: Heterogeneous Xavier Gourdon Engine (x = {}, threads = {} resolved {})", x, num_threads, threads);
+                GourdonHetero::count(x, threads)
             }
         }
     }
