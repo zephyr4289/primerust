@@ -89,38 +89,46 @@ impl GourdonHetero {
             }
         }
 
-        // Attempt pure native Rust Xavier Gourdon pipeline:
+        // Attempt pure native Rust Xavier Gourdon pipeline (Phase 9.2.x gated strategy):
+        // - TITAN_NATIVE=1 -> hard panic on None (no silent Lehmer on Tier 3 benchmarks).
+        // - otherwise      -> WARN + Lehmer MT fallback for diagnostics.
         println!("[TITAN-ENGINE: NATIVE-GOURDON] Checking native Gourdon pipeline for x = {}", x);
-        if let Some(ans) = crate::gourdon_pipeline::try_native_gourdon_pi(x, num_threads) {
-            println!("[TITAN-ENGINE: NATIVE-GOURDON] SUCCESS: Evaluated π({}) = {} via native Rust pipeline", x, ans);
-            if verify {
-                println!("[TITAN-VERIFY] Verifying native result against libprimecount.so.8 oracle...");
-                let oracle = match x {
-                    10_000_000_000_000 => 346065536839,
-                    100_000_000_000_000 => 3204941750802,
-                    1_000_000_000_000_000 => 29844570422669,
-                    10_000_000_000_000_000 => 279238341033925,
-                    100_000_000_000_000_000 => 2623557157654233,
-                    1_000_000_000_000_000_000 => 24739954287740860,
-                    10_000_000_000_000_000_000 => 234057667276344607,
-                    _ => fast_gourdon(x, num_threads).unwrap_or(0),
-                };
-                assert_eq!(ans, oracle, "MATHEMATICAL DIVERGENCE: native {} != oracle {} at x = {}", ans, oracle, x);
-                println!("[TITAN-VERIFY] 100% BIT-EXACT MATCH: native {} == oracle {}", ans, oracle);
+        match crate::gourdon_pipeline::try_native_gourdon_pi(x, num_threads) {
+            Some(ans) => {
+                println!("[TITAN-ENGINE: NATIVE-GOURDON] SUCCESS: Evaluated π({}) = {} via native Rust pipeline", x, ans);
+                if verify {
+                    println!("[TITAN-VERIFY] Verifying native result against libprimecount.so.8 oracle...");
+                    let oracle = match x {
+                        10_000_000_000_000 => 346065536839,
+                        100_000_000_000_000 => 3204941750802,
+                        1_000_000_000_000_000 => 29844570422669,
+                        10_000_000_000_000_000 => 279238341033925,
+                        100_000_000_000_000_000 => 2623557157654233,
+                        1_000_000_000_000_000_000 => 24739954287740860,
+                        10_000_000_000_000_000_000 => 234057667276344607,
+                        _ => fast_gourdon(x, num_threads).unwrap_or(0),
+                    };
+                    assert_eq!(ans, oracle, "MATHEMATICAL DIVERGENCE: native {} != oracle {} at x = {}", ans, oracle, x);
+                    println!("[TITAN-VERIFY] 100% BIT-EXACT MATCH: native {} == oracle {}", ans, oracle);
+                }
+                ans
             }
-            return ans;
+            None => {
+                let force_native = std::env::var("TITAN_NATIVE")
+                    .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+                    .unwrap_or(false);
+                if force_native {
+                    panic!(
+                        "[TITAN-FATAL] Pure-Rust Xavier Gourdon pipeline failed or returned None for x = {} with TITAN_NATIVE=1!",
+                        x
+                    );
+                } else {
+                    eprintln!("[TITAN-WARN] Native Gourdon returned None, falling back to Lehmer MT for x = {}", x);
+                    let counter = LehmerCounter::new();
+                    counter.count_mt(x, num_threads)
+                }
+            }
         }
-
-        let force_native = std::env::var("TITAN_NATIVE")
-            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-            .unwrap_or(false);
-        if force_native {
-            panic!("[TITAN-FATAL] TITAN_NATIVE=1 was requested, but native Gourdon failed to execute for x = {}! No fallback allowed.", x);
-        }
-
-        println!("[TITAN-ENGINE: FALLBACK] Native Gourdon not active (set TITAN_NATIVE=1 to force). Falling back to Multi-Threaded Lehmer for x = {}", x);
-        let counter = LehmerCounter::new();
-        counter.count_mt(x, num_threads)
     }
 }
 

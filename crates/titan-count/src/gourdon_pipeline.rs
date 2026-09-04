@@ -72,10 +72,52 @@ pub fn execute_gourdon_master(
 
     println!("[TITAN-PIPELINE] Phase 1: High-Throughput AC (8 DynamIQ threads)...");
     let t_ac = std::time::Instant::now();
-    let ac_val = if x <= i64::MAX as u64 {
-        unsafe { primecount_ac_64(x as i64, y as i64, z as i64, 8, 8, false) as i128 }
+    // Phase 9.2.2 (Strike 2) shadow: with TITAN_NATIVE_AC=1 the native
+    // AC (A - C1 + clustered C2) runs alongside FFI, asserts bit-exactness,
+    // and FFI is still returned (safe cutover path).
+    let shadow_ac = std::env::var("TITAN_NATIVE_AC")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+    let shadow_table: Option<PiTable>;
+    if shadow_ac {
+        // Native C2 queries reach xpq < x_star^2 (<= x/z on Tier-3 scales);
+        // size the shadow table accordingly (transient, freed after AC).
+        let span = (x / z.max(1)).max(z) + 30;
+        println!("[TITAN-SHADOW] building shadow PiTable (span = {})...", span);
+        shadow_table = Some(PiTable::new(span));
     } else {
-        unsafe { primecount_ac_128(x as i128, y as i64, z as i64, 8, 8, false) }
+        shadow_table = None;
+    }
+    let ac_val = if x <= i64::MAX as u64 {
+        let ffi_ac =
+            unsafe { primecount_ac_64(x as i64, y as i64, z as i64, 8, 8, false) as i128 };
+        if shadow_ac {
+            let table = shadow_table.as_ref().expect("shadow table");
+            let native_ac =
+                crate::ac_parallel_v2::compute_ac_native(x, y, z, 8, primes, table);
+            assert_eq!(
+                native_ac as i128, ffi_ac,
+                "[TITAN-SHADOW] native AC diverged from FFI at x = {}",
+                x
+            );
+            println!("[TITAN-SHADOW] native AC == FFI AC == {}", ffi_ac);
+        }
+        ffi_ac
+    } else {
+        let ffi_ac =
+            unsafe { primecount_ac_128(x as i128, y as i64, z as i64, 8, 8, false) };
+        if shadow_ac {
+            let table = shadow_table.as_ref().expect("shadow table");
+            let native_ac =
+                crate::ac_parallel_v2::compute_ac_native(x, y, z, 8, primes, table);
+            assert_eq!(
+                native_ac as i128, ffi_ac,
+                "[TITAN-SHADOW] native AC diverged from FFI at x = {}",
+                x
+            );
+            println!("[TITAN-SHADOW] native AC == FFI AC == {}", ffi_ac);
+        }
+        ffi_ac
     };
     println!("[TITAN-PERF] AC latency: {:?}", t_ac.elapsed());
 
@@ -499,5 +541,88 @@ mod tests {
         let x = 1_000_000_000u64;
         let (pipeline, primes, pi_table, mu) = make_test_context(x);
         assert_eq!(pipeline.execute(&primes, &pi_table, &mu, 4), 50847534);
+    }
+
+    /// Phase 9.2.2 (Strike 2) oracle: records FFI `primecount::AC` at 1e13.
+    /// Bit-exact target for the native clustered AC.
+    ///
+    /// AC depends on (y, z): live Strike-1 params give AC = 124,586,321,144,
+    /// while the legacy params (y = 103411, z = 170628) reproduce the spec
+    /// number AC = 105,017,131,716 (proves FFI determinism + harness validity).
+    #[test]
+    fn test_gourdon_ac_oracle_e13() {
+        extern "C" {
+            #[link_name = "_ZN10primecount2ACEllllib"]
+            fn primecount_ac_64(
+                x: i64,
+                y: i64,
+                z: i64,
+                k: i64,
+                threads: i32,
+                is_print: bool,
+            ) -> i64;
+        }
+
+        let x = 10_000_000_000_000u64;
+        let params = titan_core::tuning::resolve_gourdon_params(x);
+        println!(
+            "[E13-ORACLE] params: y = {}, z = {}, x/y = {}, alpha_y = {:.3}, alpha_z = {:.3}",
+            params.y, params.z, params.x_div_y, params.alpha_y, params.alpha_z
+        );
+
+        let ac_live = unsafe {
+            primecount_ac_64(x as i64, params.y as i64, params.z as i64, 8, 8, false)
+        };
+        println!("[E13-ORACLE] FFI AC(1e13, live y,z) = {}", ac_live);
+        assert!(ac_live > 0, "FFI AC(1e13) must be positive");
+        assert_eq!(
+            ac_live, 124_586_321_144,
+            "FFI AC(1e13) with live params diverged (tuning or FFI changed)"
+        );
+
+        let ac_legacy = unsafe { primecount_ac_64(x as i64, 103_411, 170_628, 8, 8, false) };
+        println!("[E13-ORACLE] FFI AC(1e13, legacy y=103411,z=170628) = {}", ac_legacy);
+        assert_eq!(
+            ac_legacy, 105_017_131_716,
+            "FFI AC(1e13) with legacy params diverged from spec oracle"
+        );
+    }
+
+    /// Phase 9.2.2 (Strike 2) shadow audit: full native AC (A - C1 + C2)
+    /// must be bit-exact vs FFI AC with identical (x, y, z, k).
+    #[test]
+    fn test_native_ac_shadow_e13() {
+        use crate::ac_parallel_v2::compute_ac_native;
+        use crate::ac_parallel_v2::{compute_a_formula, compute_c1_native, compute_c2_clustered};
+        use titan_sieve::base::generate_base_primes;
+
+        let x = 10_000_000_000_000u64;
+        let params = titan_core::tuning::resolve_gourdon_params(x);
+        let (y, z) = (params.y, params.z);
+
+        let base = generate_base_primes(y);
+        let mut primes = vec![0u64];
+        primes.extend_from_slice(&base);
+        // Native C2 queries satisfy xpq < x / z; C1/A need far less.
+        let pi_table = crate::pi_table::PiTable::new(x / z + 30);
+
+        let a = compute_a_formula(x, y, &primes, &pi_table);
+        let c1 = compute_c1_native(x, y, z, 8, &primes, &pi_table);
+        let c2 = compute_c2_clustered(x, y, z, &primes, &pi_table);
+        println!("[E13-SHADOW] A = {}, C1 = {}, C2 = {}", a, c1, c2);
+        // Component regression pins (1e13, live Strike-1 params).
+        assert_eq!(a, 82_737_516_456, "A(1e13) regressed");
+        assert_eq!(c1, -3_652_532_850, "C1(1e13) regressed");
+        assert_eq!(c2, 38_196_271_838, "C2(1e13) regressed");
+
+        let t0 = std::time::Instant::now();
+        let native = compute_ac_native(x, y, z, 8, &primes, &pi_table);
+        let dt = t0.elapsed();
+        println!("[E13-SHADOW] native AC(1e13) = {} ({:?})", native, dt);
+
+        assert_eq!(
+            native, 124_586_321_144,
+            "Native AC(1e13) diverged from FFI oracle"
+        );
     }
 }

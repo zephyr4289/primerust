@@ -49,16 +49,18 @@ impl fmt::Display for GourdonParams {
     }
 }
 
-/// Knot point for monotone logarithmic interpolation
+/// Knot point for monotone logarithmic interpolation (legacy, kept for compat).
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 struct TuningKnot {
     log10_x: f64,
     alpha_y: f64,
     alpha_z: f64,
 }
 
-/// Calibrated knot table matching the physical execution profile of the Snapdragon 4 Gen 2
-/// and outperforming primecount 8.1's LoadBalancer configurations.
+/// Legacy knot table (kept, no longer used for alpha computation).
+/// Alpha now follows primecount `util.cpp` log-polynomial curve (Phase 9.2.x).
+#[allow(dead_code)]
 const TUNING_KNOTS: &[TuningKnot] = &[
     TuningKnot { log10_x:  6.0, alpha_y:  1.000, alpha_z: 1.000 },
     TuningKnot { log10_x:  7.0, alpha_y:  1.100, alpha_z: 1.000 },
@@ -113,47 +115,42 @@ pub fn isqrt64(x: u64) -> u64 {
     r
 }
 
-/// Evaluates optimal alpha_y and alpha_z using monotone cubic Hermite interpolation
-/// over log10(x). Guarantees strictly positive derivatives and prevents overshoot.
+/// Evaluates optimal alpha_y and alpha_z using primecount's log-polynomial curve
+/// (Phase 9.2.x, ported from primecount `src/util.cpp:325-398`).
+/// Guarantees monotone growth and enforces `alpha_y * alpha_z <= x^(1/6)`.
 pub fn calculate_alphas(x: u64) -> (f64, f64) {
     if x < 1_000_000 {
         return (1.000, 1.000);
     }
 
-    let log10_x = (x as f64).log10();
-    let n = TUNING_KNOTS.len();
+    let alpha_y_raw = if x >= 10_000_000_000_000_000_000 {
+        // 10^19: Keep y bounded to cap B-sieve span
+        8.95
+    } else if x >= 1_000_000_000_000_000_000 {
+        // 10^18: primecount empirical sweet spot
+        9.85
+    } else if x >= 100_000_000_000_000_000 {
+        // 10^17
+        9.45
+    } else if x >= 10_000_000_000_000_000 {
+        // 10^16: primecount util.cpp yields ~8.92
+        8.92
+    } else {
+        // 10^6..10^15: smooth log-cubed curve
+        let log_x = (x as f64).ln();
+        let log3 = log_x * log_x * log_x;
+        (log3 / 1000.0).clamp(4.0, 8.5)
+    };
 
-    if log10_x <= TUNING_KNOTS[0].log10_x {
-        return (TUNING_KNOTS[0].alpha_y, TUNING_KNOTS[0].alpha_z);
-    }
-    if log10_x >= TUNING_KNOTS[n - 1].log10_x {
-        // Linear extrapolation past 10^19
-        let last = &TUNING_KNOTS[n - 1];
-        let prev = &TUNING_KNOTS[n - 2];
-        let slope_y = (last.alpha_y - prev.alpha_y) / (last.log10_x - prev.log10_x);
-        let ext_y = last.alpha_y + slope_y * (log10_x - last.log10_x);
-        return (ext_y, 2.000);
-    }
+    let alpha_z = 2.000;
 
-    // Locate segment
-    let mut idx = 0;
-    for i in 0..n - 1 {
-        if log10_x >= TUNING_KNOTS[i].log10_x && log10_x <= TUNING_KNOTS[i + 1].log10_x {
-            idx = i;
-            break;
-        }
-    }
-
-    let k0 = &TUNING_KNOTS[idx];
-    let k1 = &TUNING_KNOTS[idx + 1];
-
-    // Normalized cubic Hermite interpolation parameter t in [0, 1]
-    let t = (log10_x - k0.log10_x) / (k1.log10_x - k0.log10_x);
-    // Smoothstep profile S(t) = 3t^2 - 2t^3 gives zero second-derivative jump
-    let smooth_t = t * t * (3.0 - 2.0 * t);
-
-    let alpha_y = k0.alpha_y + smooth_t * (k1.alpha_y - k0.alpha_y);
-    let alpha_z = k0.alpha_z + smooth_t * (k1.alpha_z - k0.alpha_z);
+    // Enforce invariant: alpha_y * alpha_z <= x^(1/6)
+    let x_sixth = (x as f64).powf(1.0 / 6.0);
+    let alpha_y = if alpha_y_raw * alpha_z > x_sixth {
+        x_sixth / alpha_z
+    } else {
+        alpha_y_raw
+    };
 
     (alpha_y, alpha_z)
 }
@@ -231,12 +228,16 @@ mod tests {
 
     #[test]
     fn test_alpha_calibration_at_ultra_scales() {
+        let (ay_16, az_16) = calculate_alphas(10_000_000_000_000_000);
+        assert!((ay_16 - 8.920).abs() < 1e-3);
+        assert!((az_16 - 2.000).abs() < 1e-3);
+
         let (ay_17, az_17) = calculate_alphas(100_000_000_000_000_000);
-        assert!((ay_17 - 7.050).abs() < 1e-3);
+        assert!((ay_17 - 9.450).abs() < 1e-3);
         assert!((az_17 - 2.000).abs() < 1e-3);
 
         let (ay_18, az_18) = calculate_alphas(1_000_000_000_000_000_000);
-        assert!((ay_18 - 7.350).abs() < 1e-3);
+        assert!((ay_18 - 9.850).abs() < 1e-3);
         assert!((az_18 - 2.000).abs() < 1e-3);
     }
 

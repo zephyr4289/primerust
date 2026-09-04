@@ -7,6 +7,7 @@ edition = "2021"
 titan-core = { path = "../titan-core" }
 titan-sieve = { path = "../titan-sieve" }
 titan-bench = { path = "../titan-bench" }
+libc = "0.2"
 
 [[bin]]
 name = "pool_gate"

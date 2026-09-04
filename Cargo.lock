@@ -40,6 +40,7 @@ version = "0.1.0"
 name = "titan-pool"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "titan-bench",
  "titan-core",
  "titan-sieve",

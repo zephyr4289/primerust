@@ -73,10 +73,10 @@ mod tests {
         };
 
         let p16 = autotuner.optimize(10_000_000_000_000_000);
-        assert!((p16.alpha_y - 6.70).abs() < 1e-2);
+        assert!((p16.alpha_y - 8.92).abs() < 1e-2);
 
         let p18 = autotuner.optimize(1_000_000_000_000_000_000);
-        assert!((p18.alpha_y - 7.350).abs() < 1e-2);
+        assert!((p18.alpha_y - 9.850).abs() < 1e-2);
         assert!((p18.alpha_z - 2.00).abs() < 1e-2);
     }
 }

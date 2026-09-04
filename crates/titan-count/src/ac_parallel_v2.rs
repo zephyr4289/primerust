@@ -8,6 +8,7 @@ use crate::magic_reciprocal::FastDiv64;
 use crate::pi_table::PiTable;
 use crate::segmented_pi::SegmentedPiTable;
 use titan_core::roots::{icbrt, isqrt};
+use titan_core::tuning::{icbrt64, isqrt64};
 use crate::sigma_l1::get_x_star_gourdon;
 
 pub struct AcWorkQueue {
@@ -187,7 +188,20 @@ pub fn compute_a_formula(
     sum
 }
 
-/// Evaluates C2 leaves for b in (pi(sqrt(z)), pi(x_star)]
+/// Evaluates C2 leaves for b in (pi(sqrt(z)), pi(x_star)].
+///
+/// Scalar reference: one division + one `pi()` per prime q.
+/// Kept as the bit-exact baseline for the clustered port below.
+///
+/// Bounds mirror Walisch `C2` (primecount-ref/src/gourdon/AC.cpp:145-198)
+/// collapsed over segments to full range:
+/// * b-partition at Walisch `x_star` ([`get_x_star_gourdon`]) — using
+///   `isqrt(x/y)` here would overlap A-leaves on `(x_star, sqrt(x/y)]` and
+///   double-count the band;
+/// * `min_q = max(p, xp/p^2, sqrt(x)/p)`: the `xp/p^2` term keeps the
+///   `pi(xpq) - b + 2` shortcut exact (`xpq < p^2` required); `sqrt(x)/p`
+///   is the segment-window union bound. A `z/p` floor does NOT belong here
+///   (the reference has none in C2).
 pub fn compute_c2_formula(
     x: u64,
     y: u64,
@@ -195,8 +209,9 @@ pub fn compute_c2_formula(
     primes: &[u64],
     pi_table: &PiTable,
 ) -> i64 {
-    let x_star = isqrt(x / y);
+    let x_star = get_x_star_gourdon(x, y);
     let sqrt_z = isqrt(z);
+    let sqrt_x = isqrt(x);
     let has_sentinel = primes.first() == Some(&0);
     let prime_slice = if has_sentinel { &primes[1..] } else { primes };
 
@@ -211,11 +226,16 @@ pub fn compute_c2_formula(
 
     for b in min_b..max_b {
         let prime = prime_slice[b];
+        if prime < 2 {
+            continue;
+        }
         let xp = x / prime;
-        let sqrt_xp = isqrt(xp);
+        let xp_div_p = xp / prime;
 
-        let min_q = prime.max(z / prime);
-        let max_q = (xp / prime).min(y);
+        // Full-range C2 window: q in (min_q, max_q]. Overflow-free:
+        // xp/p^2 == (xp/p)/p for integers; prime >= 2 so no div-by-zero.
+        let min_q = prime.max(xp_div_p / prime).max(sqrt_x / prime);
+        let max_q = xp_div_p.min(y);
 
         if min_q >= max_q {
             continue;
@@ -235,6 +255,242 @@ pub fn compute_c2_formula(
     }
 
     sum
+}
+
+/// Phase 9.2.2 (Strike 2): run-length clustered C2 leaves.
+///
+/// Faithful full-range port of Walisch `C2`
+/// (primecount-ref/src/gourdon/AC.cpp:145-198):
+/// per b, the q-window splits at `min_clustered = clamp(isqrt(xp), min_q, max_q)`.
+/// Sparse q (`<= min_clustered`) are evaluated one-by-one; clustered q use the
+/// run-length accumulation `phi * (i - imin)` with zero primes-array access in
+/// the descent except resolving the next span boundary.
+///
+/// The iteration space (b-range, `min_q`/`max_q`) is IDENTICAL to
+/// [`compute_c2_formula`]; only the inner evaluation is clustered.
+/// `&[u64]` + exact [`isqrt64`] throughout. Requires:
+/// * `pi_table` spanning at least `x / z` (C2 queries satisfy
+///   `xpq < x_star^2 <= x / z` on Tier-3 scales),
+/// * `primes` reaching at least `y` (C2 spans `q <= y`).
+pub fn compute_c2_clustered(
+    x: u64,
+    y: u64,
+    z: u64,
+    primes: &[u64],
+    pi_table: &PiTable,
+) -> i64 {
+    if y < 2 || z < 2 {
+        return 0;
+    }
+    let x_star = get_x_star_gourdon(x, y);
+    let sqrt_z = isqrt64(z);
+    let sqrt_x = isqrt64(x);
+    let has_sentinel = primes.first() == Some(&0);
+    let s: &[u64] = if has_sentinel { &primes[1..] } else { primes };
+    if s.is_empty() {
+        return 0;
+    }
+
+    let min_b = s.partition_point(|&p| p <= sqrt_z);
+    let max_b = s.partition_point(|&p| p <= x_star);
+    if min_b >= max_b {
+        return 0;
+    }
+
+    // pi-count of v = number of primes <= v = 1-based index of largest prime <= v.
+    #[inline(always)]
+    fn picount(pi_table: &PiTable, v: u64) -> usize {
+        pi_table.pi(v) as usize
+    }
+
+    let mut total: i64 = 0;
+
+    for b in min_b..max_b {
+        let prime = s[b];
+        if prime < 2 {
+            continue;
+        }
+        let xp = x / prime;
+        let xp_div_p = xp / prime;
+
+        // Full-range C2 window (identical to scalar): q in (min_q, max_q].
+        let min_q = prime.max(xp_div_p / prime).max(sqrt_x / prime);
+        let max_q = xp_div_p.min(y);
+        if min_q >= max_q {
+            continue;
+        }
+
+        // 0-based index window: j in [j_lo, j_hi).
+        let j_lo = picount(pi_table, min_q);
+        let mut j_hi = picount(pi_table, max_q);
+        if j_hi > s.len() {
+            j_hi = s.len();
+        }
+        if j_lo >= j_hi {
+            continue;
+        }
+
+        // Cluster threshold: q above isqrt(xp) share quotients.
+        let clustered_q = isqrt64(xp).clamp(min_q, max_q);
+        let j_split = picount(pi_table, clustered_q).clamp(j_lo, j_hi);
+
+        let b1 = (b + 1) as i64;
+        let mut b_sum: i64 = 0;
+
+        // 1. Sparse region q in (min_q, clustered_q]: distinct quotients expected.
+        for j in j_lo..j_split {
+            let xpq = xp / s[j];
+            b_sum += pi_table.pi(xpq) as i64 - b1 + 2;
+        }
+
+        // 2. Clustered descent (Walisch): counts only, hang-proof guards.
+        let mut i_count = j_hi; // exclusive prime-count bound
+        while i_count > j_split {
+            let q = s[i_count - 1];
+            // q >= 2 guaranteed: q > min_q >= 2.
+            let xpq = xp / q.max(1);
+            let pi_xpq = picount(pi_table, xpq);
+            let phi = pi_xpq as i64 - b1 + 2;
+            if pi_xpq >= s.len() {
+                // Prime slice too short to resolve the span: exact scalar step.
+                b_sum += phi;
+                i_count -= 1;
+                continue;
+            }
+            // First prime strictly above xpq; all q' yielding the same xpq sit
+            // at counts (imin, i_count].
+            let xpq2 = xp / s[pi_xpq].max(1);
+            let imin = picount(pi_table, xpq2.max(clustered_q)).min(i_count - 1);
+            b_sum += phi * (i_count - imin) as i64;
+            i_count = imin;
+        }
+
+        total += b_sum;
+    }
+
+    total
+}
+
+/// Recursive C1 kernel: squarefree-m enumeration with alternating Mobius sign.
+///
+/// Faithful port of Walisch `C1<-MU>` (primecount-ref/src/gourdon/AC.cpp:106-140).
+/// `i` is a 1-based prime index into `s` (0-based slice, sentinel stripped);
+/// `mu_sign` flips every depth level. Overflow-safe via `checked_mul`.
+fn c1_rec(
+    xp: u64,
+    b1: i64,
+    i: usize,
+    pi_y: usize,
+    m: u64,
+    min_m: u64,
+    max_m: u64,
+    s: &[u64],
+    pi_table: &PiTable,
+    mu_sign: i64,
+) -> i64 {
+    let mut sum = 0i64;
+    let mut i = i;
+    while i <= pi_y {
+        let p = match s.get(i - 1) {
+            Some(&p) => p,
+            None => return sum,
+        };
+        let m_next = match m.checked_mul(p) {
+            Some(v) => v,
+            None => return sum,
+        };
+        if m_next > max_m {
+            return sum;
+        }
+        if m_next > min_m {
+            // m_next >= 2 (m >= 1, p >= 2): division is safe.
+            let xpm = xp / m_next.max(1);
+            sum += mu_sign * (pi_table.pi(xpm) as i64 - b1 + 2);
+        }
+        sum += c1_rec(xp, b1, i + 1, pi_y, m_next, min_m, max_m, s, pi_table, -mu_sign);
+        i += 1;
+    }
+    sum
+}
+
+/// Phase 9.2.2 (Strike 2): C1 leaves for b in (max(k, pi((x/z)^(1/3))), pi(sqrt(z))].
+///
+/// Faithful port of the C1 section of `AC_OpenMP`
+/// (primecount-ref/src/gourdon/AC.cpp:240-259). This b-range is NOT covered by
+/// [`compute_a_formula`] (b > pi(x_star)) or [`compute_c2_formula`]
+/// (b > pi(sqrt(z))); without C1 no native AC sum can match FFI `AC = A - C1 + C2`.
+/// `k` mirrors the FFI call (pipeline passes 8). Requires `pi_table` spanning
+/// at least `z` and `primes` reaching at least `y`.
+pub fn compute_c1_native(
+    x: u64,
+    y: u64,
+    z: u64,
+    k: usize,
+    primes: &[u64],
+    pi_table: &PiTable,
+) -> i64 {
+    if y < 2 || z < 2 {
+        return 0;
+    }
+    let has_sentinel = primes.first() == Some(&0);
+    let s: &[u64] = if has_sentinel { &primes[1..] } else { primes };
+    if s.is_empty() {
+        return 0;
+    }
+
+    // 1-based b window [b_start, b_end]: b_start = max(k, pi((x/z)^(1/3))) + 1.
+    let cbrt_x_div_z = icbrt64(x / z.max(1));
+    let sqrt_z = isqrt64(z);
+    let pi_cbrt = pi_table.pi(cbrt_x_div_z) as usize;
+    let b_start = k.max(pi_cbrt) + 1;
+    let b_end = pi_table.pi(sqrt_z) as usize; // inclusive 1-based
+    if b_start > b_end {
+        return 0;
+    }
+
+    let pi_y = pi_table.pi(y) as usize;
+    let mut total: i64 = 0;
+
+    // 0-based j = b - 1.
+    for j in (b_start - 1)..b_end.min(s.len()) {
+        let prime = s[j];
+        if prime < 2 {
+            continue;
+        }
+        let xp = x / prime;
+        // Overflow-free forms: xp/(p*p) == (xp/p)/p for integers.
+        let xp_div_p = xp / prime;
+        let max_m = xp_div_p.min(z);
+        let min_m128 = (xp_div_p / prime).max(z / prime);
+        let min_m = min_m128.min(max_m);
+        let b1 = (j + 1) as i64;
+        // Walisch: sum -= C1<-1>(xp, b, b, pi_y, 1, min_m, max_m); i starts at b + 1.
+        total += c1_rec(xp, b1, j + 2, pi_y, 1, min_m, max_m, s, pi_table, -1);
+    }
+
+    total
+}
+
+/// Phase 9.2.2 (Strike 2): full native AC assembler.
+///
+/// `AC(x, y, z) = A(x, y) - C1(x, y, z) + C2(x, y, z)`, mirroring the signs in
+/// `AC_OpenMP` (`sum -= C1`, `sum += C2`, `sum += A`).
+/// A-leaves use the scalar [`compute_a_formula`], which is already the exact
+/// full-range equivalent of Walisch `A` (AC.cpp:53-90): its weight-1 loop is
+/// provably empty when `p > sqrt(x/y)`, and its bounds match the reference
+/// term-for-term — so clustering A would add risk for zero structural gain.
+pub fn compute_ac_native(
+    x: u64,
+    y: u64,
+    z: u64,
+    k: usize,
+    primes: &[u64],
+    pi_table: &PiTable,
+) -> i64 {
+    let a = compute_a_formula(x, y, primes, pi_table);
+    let c1 = compute_c1_native(x, y, z, k, primes, pi_table);
+    let c2 = compute_c2_clustered(x, y, z, primes, pi_table);
+    a - c1 + c2
 }
 
 #[cfg(test)]
@@ -259,5 +515,41 @@ mod tests {
         let z = 170_628u64;
         let c2_val = compute_c2_formula(x, y, z, &primes, &pi_table);
         println!("Computed C2(1e13) = {}", c2_val);
+    }
+
+    /// Strike 2 parity: clustered C2 must be bit-identical to the scalar
+    /// reference across scales (same iteration space, fewer divs/lookups).
+    #[test]
+    fn test_c2_clustered_parity() {
+        for &x in &[1_000_000_000u64, 100_000_000_000, 1_000_000_000_000] {
+            let params = titan_core::tuning::resolve_gourdon_params(x);
+            let base = generate_base_primes(params.y);
+            let mut primes = vec![0u64];
+            primes.extend_from_slice(&base);
+            // C2 queries satisfy xpq < x / z.
+            let pi_table = PiTable::new(x / params.z + 30);
+
+            let t0 = std::time::Instant::now();
+            let scalar = compute_c2_formula(x, params.y, params.z, &primes, &pi_table);
+            let t_scalar = t0.elapsed();
+            let t0 = std::time::Instant::now();
+            let clustered =
+                compute_c2_clustered(x, params.y, params.z, &primes, &pi_table);
+            let t_clustered = t0.elapsed();
+            println!(
+                "C2(1e{}) scalar = {} ({:?}), clustered = {} ({:?})",
+                (x as f64).log10() as u32,
+                scalar,
+                t_scalar,
+                clustered,
+                t_clustered
+            );
+            assert!(scalar > 0, "C2 scalar must be positive at x = {}", x);
+            assert_eq!(
+                clustered, scalar,
+                "C2 clustered diverged from scalar at x = {}",
+                x
+            );
+        }
     }
 }

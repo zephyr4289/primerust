@@ -4,13 +4,31 @@
 //! Exact physical execution latency and resident memory for both engines across 10^6 to 10^13.
 
 use std::hint::black_box;
-use std::process::Command;
 use std::time::Instant;
 use titan_count::tier_dispatch::TierDispatch;
 
+fn get_primecount_cmd() -> std::process::Command {
+    if let Ok(prefix) = std::env::var("PREFIX") {
+        let termux_path = format!("{}/bin/primecount", prefix);
+        if std::path::Path::new(&termux_path).exists() {
+            return std::process::Command::new(termux_path);
+        }
+    }
+    for path in &[
+        "/data/data/com.termux/files/usr/bin/primecount",
+        "/usr/local/bin/primecount",
+        "/usr/bin/primecount",
+    ] {
+        if std::path::Path::new(path).exists() {
+            return std::process::Command::new(path);
+        }
+    }
+    std::process::Command::new("primecount")
+}
+
 fn run_primecount(x: u64, threads: usize) -> (u64, f64) {
     let t0 = Instant::now();
-    let output = Command::new("/usr/bin/primecount")
+    let output = get_primecount_cmd()
         .arg(x.to_string())
         .arg("-t")
         .arg(threads.to_string())

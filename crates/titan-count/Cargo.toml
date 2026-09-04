@@ -2,6 +2,7 @@
 name = "titan-count"
 version = "0.1.0"
 edition = "2021"
+links = "primecount"
 
 [dependencies]
 titan-core = { path = "../titan-core" }

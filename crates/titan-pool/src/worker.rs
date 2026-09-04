@@ -11,6 +11,54 @@ use titan_sieve::segment::{count_primes_range_direct, count_primes_with_arena};
 
 pub struct PoolRunner;
 
+/// Explicit 8-core DynamIQ CPU pinning for Snapdragon 4 Gen 2 (SM4450).
+/// Cores 0..=5: Cortex-A55 (Little, 1.96 GHz), Cores 6..=7: Cortex-A78 (Big, 2.21 GHz).
+/// Falls back to cluster mask if per-core pin fails (Termux cpuset restrictions).
+#[cfg(target_os = "android")]
+pub fn bind_worker_affinity(thread_id: usize) {
+    unsafe {
+        let mut set: libc::cpu_set_t = core::mem::zeroed();
+        libc::CPU_ZERO(&mut set);
+
+        // Qualcomm Snapdragon 4 Gen 2 (SM4450) Topology:
+        // Cores 0..=5: Cortex-A55 (Little cluster, 1.96 GHz, 32 KiB L1D, 128 KiB L2)
+        // Cores 6..=7: Cortex-A78 (Big cluster, 2.21 GHz, 64 KiB L1D, 512 KiB L2)
+        let target_cpu = match thread_id {
+            0..=5 => thread_id,             // Pin worker 0..5 directly to Little cores 0..5
+            6 => 6,                          // Pin worker 6 to Big Core 6
+            7 => 7,                          // Pin worker 7 to Big Core 7
+            _ => thread_id % 8,             // Wrap-around fallback
+        };
+
+        libc::CPU_SET(target_cpu, &mut set);
+
+        let tid = libc::gettid();
+        let ret = libc::sched_setaffinity(
+            tid,
+            core::mem::size_of::<libc::cpu_set_t>(),
+            &set,
+        );
+
+        if ret != 0 {
+            // Fallback: Bind to cluster mask if per-core pin fails
+            let cluster_mask: usize = if thread_id >= 6 { 0xC0 } else { 0x3F };
+            let mut fallback_set: libc::cpu_set_t = core::mem::zeroed();
+            libc::CPU_ZERO(&mut fallback_set);
+            for cpu in 0..8 {
+                if (cluster_mask & (1 << cpu)) != 0 {
+                    libc::CPU_SET(cpu, &mut fallback_set);
+                }
+            }
+            libc::sched_setaffinity(tid, core::mem::size_of::<libc::cpu_set_t>(), &fallback_set);
+        }
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+pub fn bind_worker_affinity(_thread_id: usize) {
+    // No-op for non-Android platforms
+}
+
 impl PoolRunner {
     /// Execute multi-threaded sieve on N up to num_workers (<= 8).
     pub fn run(
@@ -27,14 +75,17 @@ impl PoolRunner {
             telemetries.push(Arc::new(WorkerTelemetry::new()));
         }
 
-        // Assigned CPUs: big cores first if few workers, or standard 0..num_workers
+        // Assigned CPUs: big cores first if few workers, else explicit DynamIQ map.
+        // FIX (Phase 9.2.0): old `num <= 6 => 0..num` starved Big cores 6,7.
         let assigned_cpus: Vec<usize> = if num_workers == 1 {
             vec![6] // single big core
         } else if num_workers == 2 {
             vec![6, 7] // two big cores
         } else if num_workers <= 6 {
-            // Little cores + big cores
-            (0..num_workers).collect()
+            // Include both Big cores first, then Littles (never starve A78s)
+            let mut cpus = vec![6, 7];
+            cpus.extend(0..(num_workers - 2));
+            cpus
         } else {
             // 7 or 8 workers: full SoC
             (0..num_workers).collect()
